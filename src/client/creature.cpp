@@ -218,13 +218,11 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     if (drawFlags & Otc::DrawNames) {
         m_name.draw(textRect, fillColor);
 
-#ifndef BOT_PROTECTION
         if (m_text) {
             auto extraTextSize = m_text->getTextSize();
             Rect extraTextRect = Rect(p.x - extraTextSize.width() / 2.0, p.y + 15, extraTextSize);
             m_text->drawText(extraTextRect.center(), extraTextRect);
         }
-#endif
     }
 
     if (m_skull != Otc::SkullNone && m_skullTexture)
@@ -556,6 +554,12 @@ void Creature::updateWalkAnimation()
     // looktype has no animations
     if (footAnimPhases == 0)
         return;
+
+    // diagonal walk is taking longer than the animation, thus why don't animate continously
+    if (m_walkTimer.ticksElapsed() < getStepDuration() && m_walkedPixels == g_gameConfig.getSpriteSize()) {
+        m_walkAnimationPhase = 0;
+        return;
+    }
 
     int minFootDelay = 20;
     const int maxFootDelay = footAnimPhases > 2 ? 80 : 205;
@@ -1168,7 +1172,6 @@ void Creature::setCovered(bool covered) {
     });
 }
 
-#ifndef BOT_PROTECTION
 void Creature::setText(const std::string& text, const Color& color)
 {
     if (!m_text) {
@@ -1190,4 +1193,3 @@ bool Creature::canShoot(int distance)
 {
     return getTile() ? getTile()->canShoot(distance) : false;
 }
-#endif

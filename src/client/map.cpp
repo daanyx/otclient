@@ -126,6 +126,13 @@ void Map::cleanDynamicThings()
     for (const auto& mapview : m_mapViews)
         mapview->followCreature(nullptr);
 
+    for (const auto& [uid, creature] : m_knownCreatures) {
+        creature->setWidgetInformation(nullptr);
+        removeThing(creature);
+    }
+
+    m_knownCreatures.clear();
+
     std::vector<UIWidgetPtr> widgets;
     widgets.reserve(m_attachedObjectWidgetMap.size());
 
@@ -137,15 +144,12 @@ void Map::cleanDynamicThings()
     for (const auto& widget : widgets)
         widget->destroy();
 
-    for (const auto& [uid, creature] : m_knownCreatures)
-        removeThing(creature);
-
-    m_knownCreatures.clear();
-
     for (auto i = -1; ++i <= g_gameConfig.getMapMaxZ();)
         m_floors[i].missiles.clear();
 
     cleanTexts();
+
+    g_lua.collectGarbage();
 }
 
 void Map::addThing(const ThingPtr& thing, const Position& pos, const int16_t stackPos)
@@ -1238,7 +1242,6 @@ void Map::updateAttachedWidgets(const MapViewPtr& mapView)
     }
 }
 
-#ifndef BOT_PROTECTION
 std::map<std::string, std::tuple<int, int, int, std::string>> Map::findEveryPath(const Position& start, int maxDistance, const std::map<std::string, std::string>& params)
 {
     // using Dijkstra's algorithm
@@ -1455,4 +1458,3 @@ std::vector<CreaturePtr> Map::getSpectatorsByPattern(const Position& centerPos, 
     }
     return creatures;
 }
-#endif

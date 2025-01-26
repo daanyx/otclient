@@ -155,6 +155,14 @@ function g_things.loadAppearances(file) end
 
 ---@param file string
 ---@return boolean
+function g_things.loadStaticData(file) end
+
+---@param file string
+---@return boolean
+function g_things.loadSounds(file) end
+
+---@param file string
+---@return boolean
 function g_things.loadDat(file) end
 
 ---@param file string
@@ -183,6 +191,14 @@ function g_things.getThingTypes(category) end
 ---@param category integer
 ---@return ThingType[]
 function g_things.findThingTypeByAttr(attr, category) end
+
+---@param raceId integer
+---@return RaceType[]
+function g_things.getRaceData(raceId) end
+
+---@param searchString string
+---@return Vector<RaceType>
+function g_things.getRacesByName(searchString) end
 
 ---* FRAMEWORK_EDITOR
 ---@param id integer
@@ -582,14 +598,12 @@ function g_map.getMinimapColor(pos) end
 ---@return boolean
 function g_map.isSightClear(fromPos, toPos) end
 
----* BOT_PROTECTION
 ---@param start Position | string
 ---@param maxDistance integer
 ---@param params table<string, string>
 ---@return table<string, [integer, integer, integer, string]>
 function g_map.findEveryPath(start, maxDistance, params) end
 
----* BOT_PROTECTION
 ---@param centerPos Position | string
 ---@param pattern string
 ---@param direction integer
@@ -700,7 +714,9 @@ g_game = {}
 ---@param characterName string
 ---@param authenticatorToken string
 ---@param sessionKey string
-function g_game.loginWorld(account, password, worldName, worldHost, worldPort, characterName, authenticatorToken, sessionKey) end
+function g_game.loginWorld(account, password, worldName, worldHost, worldPort, characterName, authenticatorToken,
+                           sessionKey)
+end
 
 function g_game.cancelLogin() end
 
@@ -1157,9 +1173,6 @@ function g_game.enableTileThingLuaCallback(value) end
 
 ---@return boolean
 function g_game.isTileThingLuaCallbackEnabled() end
-
----@return boolean
-function g_game.isEnabledBotProtection() end
 
 ---@param itemId integer
 ---@param count number
@@ -1854,19 +1867,15 @@ function Creature:isFullHealth() end
 ---@return boolean
 function Creature:isCovered() end
 
----* !BOT_PROTECTION
 ---@param text string
 ---@param color Color | string
 function Creature:setText(text, color) end
 
----* !BOT_PROTECTION
 ---@return string
 function Creature:getText() end
 
----* !BOT_PROTECTION
 function Creature:clearText() end
 
----* !BOT_PROTECTION
 ---@param distance integer
 ---@return boolean
 function Creature:canShoot(distance) end

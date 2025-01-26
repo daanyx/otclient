@@ -473,8 +473,9 @@ protected:
     static void processRemoveAutomapFlag(const Position& pos, uint8_t icon, std::string_view message);
 
     // outfit
-    void processOpenOutfitWindow(const Outfit& currentOutfit, const std::vector<std::tuple<uint16_t, std::string, uint8_t>>& outfitList,
-                                const std::vector<std::tuple<uint16_t, std::string>>& mountList,
+    void processOpenOutfitWindow(const Outfit& currentOutfit, const std::vector<std::tuple<uint16_t, std::string, uint8_t, uint8_t>>& outfitList,
+                                const std::vector<std::tuple<uint16_t, std::string, uint8_t>>& mountList,
+                                const std::vector<std::tuple<uint16_t, std::string>>& familiarList,
                                 const std::vector<std::tuple<uint16_t, std::string>>& wingsList,
                                 const std::vector<std::tuple<uint16_t, std::string>>& aurasList,
                                 const std::vector<std::tuple<uint16_t, std::string>>& effectsList,
@@ -496,7 +497,7 @@ protected:
 
     // questlog
     static void processQuestLog(const std::vector<std::tuple<uint16_t, std::string, bool>>& questList);
-    static void processQuestLine(uint16_t questId, const std::vector<std::tuple<std::string_view, std::string_view, uint16_t>>& questMissions);
+    static void processQuestLine(uint16_t questId, const std::vector<std::tuple<std::string, std::string, uint16_t>>& questMissions);
 
     // modal dialogs >= 970
     static void processModalDialog(uint32_t id, std::string_view title, std::string_view message, const std::vector<std::tuple<uint8_t, std::string>>
@@ -696,21 +697,7 @@ public:
     void setCustomOs(const Otc::OperatingSystem_t os) { m_clientCustomOs = os; }
     Otc::OperatingSystem_t getOs();
 
-    void setWalkTurnDelay(const uint16_t v) { m_walkTurnDelay = v; }
-    void setWalkFirstStepDelay(const uint16_t v) { m_walkFirstStepDelay = v; }
-
-    uint16_t getWalkTurnDelay() { return m_walkTurnDelay; }
-    uint16_t getWalkFirstStepDelay() { return m_walkFirstStepDelay; }
-
     bool canPerformGameAction() const;
-    bool checkBotProtection() const;
-    bool isEnabledBotProtection() {
-#ifdef BOT_PROTECTION
-        return true;
-#else
-        return false;
-#endif
-    }
 
     bool isOnline() { return m_online; }
     bool isLogging() { return !m_online && m_protocolGame; }
@@ -821,8 +808,6 @@ private:
     bool m_canReportBugs{ false };
 
     uint8_t m_openPvpSituations{ 0 };
-    uint16_t m_walkFirstStepDelay{ 200 };
-    uint16_t m_walkTurnDelay{ 100 };
     uint16_t m_serverBeat{ 50 };
     uint16_t m_pingDelay{ 1000 };
     uint16_t m_protocolVersion{ 0 };

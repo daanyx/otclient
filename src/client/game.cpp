@@ -404,8 +404,9 @@ void Game::processRemoveAutomapFlag(const Position& pos, const uint8_t icon, con
     g_lua.callGlobalField("g_game", "onRemoveAutomapFlag", pos, icon, message);
 }
 
-void Game::processOpenOutfitWindow(const Outfit& currentOutfit, const std::vector<std::tuple<uint16_t, std::string, uint8_t>>& outfitList,
-                                   const std::vector<std::tuple<uint16_t, std::string>>& mountList,
+void Game::processOpenOutfitWindow(const Outfit& currentOutfit, const std::vector<std::tuple<uint16_t, std::string, uint8_t, uint8_t>>& outfitList,
+                                   const std::vector<std::tuple<uint16_t, std::string, uint8_t>>& mountList,
+                                   const std::vector<std::tuple<uint16_t, std::string>>& familiarList,
                                    const std::vector<std::tuple<uint16_t, std::string>>& wingsList,
                                    const std::vector<std::tuple<uint16_t, std::string>>& aurasList,
                                    const std::vector<std::tuple<uint16_t, std::string>>& effectList,
@@ -430,7 +431,13 @@ void Game::processOpenOutfitWindow(const Outfit& currentOutfit, const std::vecto
         virtualMountCreature->setOutfit(mountOutfit);
     }
 
-    g_lua.callGlobalField("g_game", "onOpenOutfitWindow", virtualOutfitCreature, outfitList, virtualMountCreature, mountList, wingsList, aurasList, effectList, shaderList);
+    if (getFeature(Otc::GamePlayerFamiliars)) {
+        Outfit familiarOutfit;
+        familiarOutfit.setId(currentOutfit.getFamiliar());
+        familiarOutfit.setCategory(ThingCategoryCreature);
+    }
+
+    g_lua.callGlobalField("g_game", "onOpenOutfitWindow", virtualOutfitCreature, outfitList, virtualMountCreature, mountList, familiarList, wingsList, aurasList, effectList, shaderList);
 }
 
 void Game::processOpenNpcTrade(const std::vector<std::tuple<ItemPtr, std::string, uint32_t, uint32_t, uint32_t>>& items)
@@ -478,7 +485,7 @@ void Game::processQuestLog(const std::vector<std::tuple<uint16_t, std::string, b
     g_lua.callGlobalField("g_game", "onQuestLog", questList);
 }
 
-void Game::processQuestLine(const uint16_t questId, const std::vector<std::tuple<std::string_view, std::string_view, uint16_t>>& questMissions)
+void Game::processQuestLine(const uint16_t questId, const std::vector<std::tuple<std::string, std::string, uint16_t>>& questMissions)
 {
     g_lua.callGlobalField("g_game", "onQuestLine", questId, questMissions);
 }
@@ -634,80 +641,6 @@ bool Game::walk(const Otc::Direction direction)
 {
     if (!canPerformGameAction() || direction == Otc::InvalidDirection)
         return false;
-
-    // must cancel auto walking, and wait next try
-    if (m_localPlayer->isAutoWalking()) {
-        m_protocolGame->sendStop();
-        m_localPlayer->stopAutoWalk();
-        return false;
-    }
-
-    static ScheduledEventPtr nextWalkSchedule = nullptr;
-    static uint16_t steps = 0;
-    static Timer timer;
-
-    if (nextWalkSchedule) nextWalkSchedule->cancel();
-    nextWalkSchedule = g_dispatcher.scheduleEvent([this] {
-        nextWalkSchedule = nullptr;
-        steps = 0;
-    }, 150);
-
-    // check we can walk and add new walk event if false
-    if (!m_localPlayer->canWalk(direction)) {
-        return false;
-    }
-
-    if (steps == 1) {
-        if (timer.ticksElapsed() <= m_walkFirstStepDelay)
-            return false;
-    } else if (direction != m_localPlayer->getDirection()) {
-        if (timer.ticksElapsed() <= m_walkTurnDelay)
-            return false;
-    }
-
-    ++steps;
-    timer.restart();
-
-    const auto& toPos = m_localPlayer->getPosition().translatedToDirection(direction);
-
-    // only do prewalks to walkable tiles (like grounds and not walls)
-    const auto& toTile = g_map.getTile(toPos);
-    if (toTile && toTile->isWalkable()) {
-        m_localPlayer->preWalk(direction);
-    } else {
-        // check if can walk to a lower floor
-        const auto& canChangeFloorDown = [&]() -> bool {
-            Position pos = toPos;
-            if (!pos.down())
-                return false;
-
-            const auto& toTile = g_map.getTile(pos);
-            return toTile && toTile->hasElevation(3);
-        };
-
-        // check if can walk to a higher floor
-        const auto& canChangeFloorUp = [&]() -> bool {
-            const auto& fromTile = m_localPlayer->getTile();
-            if (!fromTile || !fromTile->hasElevation(3))
-                return false;
-
-            Position pos = toPos;
-            if (!pos.up())
-                return false;
-
-            const auto& toTile = g_map.getTile(pos);
-            return toTile && toTile->isWalkable();
-        };
-
-        if (!(canChangeFloorDown() || canChangeFloorUp() || !toTile || toTile->isEmpty()))
-            return false;
-
-        m_localPlayer->lockWalk();
-    }
-
-    // must cancel follow before any new walk
-    if (isFollowing())
-        cancelFollow();
 
     g_lua.callGlobalField("g_game", "onWalk", direction);
 
@@ -1592,21 +1525,6 @@ void Game::changeMapAwareRange(const uint8_t xrange, const uint8_t yrange)
     m_protocolGame->sendChangeMapAwareRange(xrange, yrange);
 }
 
-bool Game::checkBotProtection() const
-{
-#ifdef BOT_PROTECTION
-#ifndef ANDROID
-    // accepts calls comming from a stacktrace containing only C++ functions,
-    // if the stacktrace contains a lua function, then only accept if the engine is processing an input event
-    if (m_denyBotCall && g_lua.isInCppCallback() && !g_app.isOnInputEvent()) {
-        g_logger.error(g_lua.traceback("caught a lua call to a bot protected game function, the call was cancelled"));
-        return false;
-    }
-#endif
-#endif
-    return true;
-}
-
 bool Game::canPerformGameAction() const
 {
     // we can only perform game actions if we meet these conditions:
@@ -1615,8 +1533,7 @@ bool Game::canPerformGameAction() const
     // - the local player is not dead
     // - we have a game protocol
     // - the game protocol is connected
-    // - its not a bot action
-    return m_online && m_localPlayer && !m_dead && m_protocolGame && m_protocolGame->isConnected() && checkBotProtection();
+    return m_online && m_localPlayer && !m_dead && m_protocolGame && m_protocolGame->isConnected();
 }
 
 void Game::setProtocolVersion(const uint16_t version)

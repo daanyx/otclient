@@ -16,7 +16,6 @@ option(TOGGLE_FRAMEWORK_NET "Use NET " ON)
 option(TOGGLE_FRAMEWORK_EDITOR "Use Editor " OFF)
 option(TOGGLE_DIRECTX "Use DX9 support" OFF)
 option(TOGGLE_BIN_FOLDER "Use build/bin folder for generate compilation files" OFF)
-option(TOGGLE_BOT_PROTECTION "Use bot protection" OFF)
 option(DEBUG_LOG "Enable Debug Log" OFF)
 option(ASAN_ENABLED "Build this target with AddressSanitizer" OFF)
 option(BUILD_STATIC_LIBRARY "Build using static libraries" OFF)
@@ -75,14 +74,6 @@ endif()
 if (ANDROID OR WASM)
 	set(FRAMEWORK_DEFINITIONS ${FRAMEWORK_DEFINITIONS} -DOPENGL_ES=2)
 endif()
-
-# Set for use bot protection
-if(TOGGLE_BOT_PROTECTION)
-	message(STATUS "Bot protection: ON")
-else(TOGGLE_BOT_PROTECTION)
-	message(STATUS "Bot protection: OFF")
-endif(TOGGLE_BOT_PROTECTION)
-
 
 # Set for use precompiled header
 if(TOGGLE_PRE_COMPILED_HEADER)
@@ -173,10 +164,6 @@ endif()
 
 # Client options
 add_definitions(-DCLIENT)
-# Set bot protection
-if(TOGGLE_BOT_PROTECTION)
-	add_definitions(-DBOT_PROTECTION)
-endif(TOGGLE_BOT_PROTECTION)
 add_definitions(-D_WIN32_WINNT=0x0501)
 add_definitions(${FRAMEWORK_DEFINITIONS})
 add_definitions(-D"VERSION=${VERSION}")
@@ -458,6 +445,8 @@ if(MSVC)
 		_WIN32_WINNT=0x0600
 	)
 
+	target_compile_options(${PROJECT_NAME} PUBLIC /MP /FS /Zf /EHsc )
+
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 		string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 		string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
@@ -477,7 +466,6 @@ if(MSVC)
 		set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
 	else()
 		log_option_disabled("STATIC_LIBRARY")
-		target_compile_options(${PROJECT_NAME} PUBLIC /MP /FS /Zf /EHsc )
 		set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
 	endif()
 
