@@ -1,6 +1,6 @@
 <h1><img src="https://github.com/mehah/otclient/blob/main/data/images/clienticon.png?raw=true" width="32" alt="logo"/> OTClient - Redemption</h1>
 
-[![Discord Shield](https://discordapp.com/api/guilds/888062548082061433/widget.png?style=shield)](https://discord.gg/HZN8yJJSyC)
+[![Discord Shield](https://discordapp.com/api/guilds/888062548082061433/widget.png?style=shield)](https://discord.gg/tUjTBZzMCy)
 [![Build - Ubuntu](https://github.com/mehah/otclient/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/mehah/otclient/actions/workflows/build-ubuntu.yml)
 [![Build - Windows](https://github.com/mehah/otclient/actions/workflows/build-windows.yml/badge.svg)](https://github.com/mehah/otclient/actions/workflows/build-windows.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -146,7 +146,7 @@ Beyond of it's flexibility with scripts, otclient comes with tons of other featu
 
 - <details>
    <summary>Auto Reload Module</summary>
-
+   <br>
    Activate `g_modules.enableAutoReload()`  ([init.lua](https://github.com/mehah/otclient/blob/main/init.lua#L114))
 
 
@@ -257,11 +257,19 @@ Beyond of it's flexibility with scripts, otclient comes with tons of other featu
 </details>
 
 - Support DirectX
-
+- Hud Scale
 - <details>
    <summary>Garbage Collection </summary>
   <br>
   Garbage collector is used to check what is no longer being used and remove it from memory. (lua, texture, drawpool, thingtype)
+</details>
+
+- <details>
+   <summary>Latency-adaptive camera</summary>
+  <br>
+  Basically the camera adapts to the server latency to always remain smooth and not have that stuttering session when walking.
+
+  In short, if the ping gets high, the camera moves slower, trying to keep up with the server's response time. If the ping goes down soon after, the camera will move faster. Of course, this all depends on your character's speed.
 </details>
 
 
@@ -373,7 +381,6 @@ Beyond of it's flexibility with scripts, otclient comes with tons of other featu
 </p>
 
 - Lua Debugger for VSCode [see wiki](https://github.com/mehah/otclient/wiki/Lua-Debugging-(VSCode)) [@BenDol](https://github.com/BenDol)
-- Tutorial to Use OTC in TFS main [see wiki](https://github.com/mehah/otclient/wiki/Tutorial-to-Use-OTC-in-TFS-main)
 
 - 3D Sound and Sound Effects! by [@Codinablack](https://github.com/codinablack)
 
@@ -432,7 +439,7 @@ Beyond of it's flexibility with scripts, otclient comes with tons of other featu
 - Blessing
 - Screenshot
 - Highscores
-- Store (compatible with 13.32 - 13.40)
+- Store (compatible with 1098 , 12.91 ~ 13.40)
 - QuickLoot
 - Groups Vip
 
@@ -468,6 +475,7 @@ Beyond of it's flexibility with scripts, otclient comes with tons of other featu
 - Placeholder
 - UIGraph
 - keybinds
+- Cam system
   
 ## <a name="themobileproject"><img height="32" src="https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/android/android.png" alt="Android"> The Mobile Project </a>
 The Mobile Project
@@ -517,7 +525,7 @@ xhost -
 
 ## <a name="need-help?">🩺 Need help?</a>
 
-Try to ask questions in [discord](https://discord.gg/HZN8yJJSyC)
+Try to ask questions in [discord](https://discord.gg/tUjTBZzMCy)
 
 ## <a name="bugs">📑 Bugs?</a>
 
@@ -530,16 +538,15 @@ Have found a bug? Please create an issue in our [bug tracker](https://github.com
 >
 > In Old Protocol , if you consider that the speed of the item is too fast, modify [item-ticks-per-frame: 75](https://github.com/mehah/otclient/blob/cf7badda978de88cb3724615688e3d9da2ff4207/data/setup.otml#L32)  in setup.otml
 
-## <a name="roadmap">❤️ Roadmap</a>
+## <a name="roadmap">❤️ Roadmap of the community</a>
 
 | TO-DO list            	| Status                            	| PR   	|
 |-----------------------	|-----------------------------------	|------	|
-| Android compatibility 	| ![](https://geps.dev/progress/50) 	| [Branch](https://github.com/mehah/otclient/tree/mobile-working) 	|
 | wheel of destiny            	| ![](https://geps.dev/progress/1) 	| None	|
+| Daily Reward Wall            	| ![](https://geps.dev/progress/0) 	| None	|
 | Forge            	| ![](https://geps.dev/progress/1) 	| None	|
 | Analyzer              	| ![](https://geps.dev/progress/10)   |  [#802](https://github.com/mehah/otclient/pull/802)    	|
-| fix: Extended view new-layout | ![](https://geps.dev/progress/0)   |   None   	|
-| Sound tibia 13 | ![](https://geps.dev/progress/0)   |   None   	|
+| Sound tibia 13 | ![](https://geps.dev/progress/80)   |  [#1098](https://github.com/mehah/otclient/pull/1098)   	|
 
 ## <a name="supportprotocol">💯 Support Protocol</a>
 
@@ -554,6 +561,7 @@ Have found a bug? Please create an issue in our [bug tracker](https://github.com
 | Canary 13.21        	| OpenTibiaBr               	| [Assets , Enable HTTP login and port 80](https://docs.opentibiabr.com/opentibiabr/projects/otclient-redemption#how-to-connect-on-canary-with-otclient-redemption)            	| ✅             	|
 | Canary 13.32        	| OpenTibiaBr              	| [Assets ,  Enable HTTP login and port 80](https://docs.opentibiabr.com/opentibiabr/projects/otclient-redemption#how-to-connect-on-canary-with-otclient-redemption)           	| ✅             	|
 | Canary 13.40        	| OpenTibiaBr              	| [Assets ,  Enable HTTP login and port 80](https://docs.opentibiabr.com/opentibiabr/projects/otclient-redemption#how-to-connect-on-canary-with-otclient-redemption)           	| ✅             	|
+| Canary 14.05        	| OpenTibiaBr              	| [Assets ,  Enable HTTP login and port 80](https://docs.opentibiabr.com/opentibiabr/projects/otclient-redemption#how-to-connect-on-canary-with-otclient-redemption)           	| ❌             	|
 
 
 

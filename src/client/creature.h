@@ -185,10 +185,19 @@ minHeight,
     void clearText() { setText("", Color::white); }
     bool canShoot(int distance);
 
+    bool isCameraFollowing() const {
+        return m_cameraFollowing;
+    }
+
+    void setCameraFollowing(bool v) {
+        m_cameraFollowing = v;
+    }
+
 protected:
-    virtual void updateWalkOffset(uint8_t totalPixelsWalked);
-    virtual void updateWalk(bool isPreWalking = false);
     virtual void terminateWalk();
+    virtual void onWalking() {};
+    void updateWalkOffset(uint8_t totalPixelsWalked);
+    void updateWalk();
 
     ThingType* getThingType() const override;
     ThingType* getMountThingType() const;
@@ -202,6 +211,8 @@ protected:
     Otc::Direction m_direction{ Otc::South };
 
     Timer m_walkTimer;
+
+    int16_t m_lastMapDuration = -1;
 
 private:
     void nextWalkUpdate();
@@ -244,8 +255,8 @@ private:
     CachedText m_name;
     CachedStep m_stepCache;
 
-    Position m_lastStepFromPosition;
     Position m_lastStepToPosition;
+    Position m_lastStepFromPosition;
     Position m_oldPosition;
 
     Timer m_footTimer;
@@ -305,6 +316,7 @@ private:
     bool m_allowAppearWalk{ false };
     bool m_showTimedSquare{ false };
     bool m_showStaticSquare{ false };
+    bool m_cameraFollowing{ false };
 
     bool m_removed{ true };
     bool m_drawOutfitColor{ true };

@@ -428,6 +428,12 @@ void MapView::updateVisibleTiles()
 }
 
 void MapView::updateRect(const Rect& rect) {
+    if (m_posInfo.camera != getCameraPosition()) {
+        m_posInfo.camera = getCameraPosition();
+        requestUpdateVisibleTiles();
+        requestUpdateMapPosInfo();
+    }
+
     if (m_posInfo.rect != rect || m_updateMapPosInfo) {
         m_updateMapPosInfo = false;
 
@@ -441,8 +447,6 @@ void MapView::updateRect(const Rect& rect) {
         if (mousePos != m_mousePosition)
             onMouseMove(m_mousePosition = mousePos, true);
     }
-
-    m_posInfo.camera = getCameraPosition();
 }
 
 void MapView::updateGeometry(const Size& visibleDimension)
@@ -633,17 +637,31 @@ void MapView::setAntiAliasingMode(const AntialiasingMode mode)
 
 void MapView::followCreature(const CreaturePtr& creature)
 {
-    m_follow = true;
+    if (creature == m_followingCreature)
+        return;
+
+    if (!creature) {
+        setCameraPosition(m_followingCreature ? m_followingCreature->getPosition() : g_map.getCentralPosition());
+        return;
+    }
+
+    if (m_followingCreature) m_followingCreature->setCameraFollowing(false);
     m_followingCreature = creature;
+    m_followingCreature->setCameraFollowing(true);
     m_lastCameraPosition = {};
+    m_follow = true;
 
     requestUpdateVisibleTiles();
 }
 
 void MapView::setCameraPosition(const Position& pos)
 {
+    if (m_followingCreature)
+        m_followingCreature->setCameraFollowing(false);
+
     m_follow = false;
     m_customCameraPosition = pos;
+    m_followingCreature = nullptr;
     requestUpdateVisibleTiles();
 }
 
