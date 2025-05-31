@@ -663,7 +663,9 @@ void Creature::nextWalkUpdate()
 
 void Creature::updateWalk()
 {
-    const float walkTicksPerPixel = getStepDuration(true) / static_cast<float>(g_gameConfig.getSpriteSize());
+    const int stepDuration = getStepDuration(true);
+    const float stabilizeCam = isCameraFollowing() && g_window.vsyncEnabled() ? 6.f : 0.f;
+    const float walkTicksPerPixel = (stepDuration + stabilizeCam) / static_cast<float>(g_gameConfig.getSpriteSize());
 
     const int totalPixelsWalked = std::min<int>(m_walkTimer.ticksElapsed() / walkTicksPerPixel, g_gameConfig.getSpriteSize());
 
@@ -1019,11 +1021,11 @@ const Light& Creature::getLight() const
 }
 
 ThingType* Creature::getThingType() const {
-    return g_things.getThingType(m_outfit.isCreature() ? m_outfit.getId() : m_outfit.getAuxId(), m_outfit.getCategory()).get();
+    return g_things.getRawThingType(m_outfit.isCreature() ? m_outfit.getId() : m_outfit.getAuxId(), m_outfit.getCategory());
 }
 
 ThingType* Creature::getMountThingType() const {
-    return m_outfit.hasMount() ? g_things.getThingType(m_outfit.getMount(), ThingCategoryCreature).get() : nullptr;
+    return m_outfit.hasMount() ? g_things.getRawThingType(m_outfit.getMount(), ThingCategoryCreature) : nullptr;
 }
 
 uint16_t Creature::getCurrentAnimationPhase(const bool mount)

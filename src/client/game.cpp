@@ -1528,6 +1528,22 @@ void Game::sendRequestStoreHome()
     m_protocolGame->sendRequestStoreHome();
 }
 
+void Game::sendRequestStorePremiumBoost()
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendRequestStorePremiumBoost();
+}
+
+void Game::sendRequestUsefulThings(const uint8_t serviceType)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendRequestUsefulThings(serviceType);
+}
+
 void Game::sendRequestStoreOfferById(const uint32_t offerId, const uint8_t sortOrder, const uint8_t serviceType)
 {
     if (!canPerformGameAction())
@@ -1611,7 +1627,7 @@ void Game::setProtocolVersion(const uint16_t version)
         throw Exception("Unable to change protocol version while online");
 
     if (version != 0 && (version < 740 || version > g_gameConfig.getLastSupportedVersion()))
-        throw Exception("Protocol version %d not supported", version);
+        throw Exception("Protocol version {} not supported", version);
 
     m_protocolVersion = version;
 
@@ -1629,7 +1645,7 @@ void Game::setClientVersion(const uint16_t version)
         throw Exception("Unable to change client version while online");
 
     if (version != 0 && (version < 740 || version > g_gameConfig.getLastSupportedVersion()))
-        throw Exception("Client version %d not supported", version);
+        throw Exception("Client version {} not supported", version);
 
     m_features.reset();
 
@@ -1946,7 +1962,40 @@ void Game::requestBossSlotAction(const uint8_t action, const uint32_t raceId)
 
 void Game::sendStatusTrackerBestiary(const uint16_t raceId, const bool status)
 {
-    enableBotCall();
+    if (!canPerformGameAction())
+        return;
+
     m_protocolGame->sendStatusTrackerBestiary(raceId, status);
-    disableBotCall();
+}
+
+void Game::sendOpenRewardWall()
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendOpenRewardWall();
+}
+
+void Game::requestOpenRewardHistory()
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendOpenRewardHistory();
+}
+
+void Game::requestGetRewardDaily(const uint8_t bonusShrine, const std::map<uint16_t, uint8_t>& items)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendGetRewardDaily(bonusShrine, items);
+}
+
+void Game::sendRequestTrackerQuestLog(const std::map<uint16_t, std::string>& quests)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendRequestTrackerQuestLog(quests);
 }
