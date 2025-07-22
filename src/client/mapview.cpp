@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -962,13 +962,10 @@ void MapView::destroyHighlightTile() {
 }
 
 void MapView::addForegroundTile(const TilePtr& tile) {
-    std::scoped_lock l(g_drawPool.get(DrawPoolType::FOREGROUND_MAP)->getMutex());
-
     if (std::ranges::find(m_foregroundTiles, tile) == m_foregroundTiles.end())
         m_foregroundTiles.emplace_back(tile);
 }
 void MapView::removeForegroundTile(const TilePtr& tile) {
-    std::scoped_lock l(g_drawPool.get(DrawPoolType::FOREGROUND_MAP)->getMutex());
     const auto it = std::ranges::find(m_foregroundTiles, tile);
     if (it == m_foregroundTiles.end())
         return;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -146,6 +146,11 @@ void Map::cleanDynamicThings()
 
     for (auto i = -1; ++i <= g_gameConfig.getMapMaxZ();)
         m_floors[i].missiles.clear();
+
+    for (auto& floor : m_floors) {
+        floor.missiles.clear();
+        floor.tileBlocks.clear();
+    }
 
     cleanTexts();
 

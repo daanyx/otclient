@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1289,6 +1289,40 @@ UIAnchorLayoutPtr UIWidget::getAnchoredLayout()
         return layout->static_self_cast<UIAnchorLayout>();
 
     return nullptr;
+}
+
+UIAnchorList UIWidget::getAnchorsGroup() {
+    if (const auto& layout = getAnchoredLayout()) {
+        const auto& self = static_self_cast<UIWidget>();
+        if (layout->hasAnchors(self)) {
+            const auto& anchors = layout->getAnchorsGroup()[self]->getAnchors();
+            return anchors;
+        }
+    }
+
+    return {};
+}
+
+std::vector<Fw::AnchorEdge> UIWidget::getAnchors() {
+    const auto& anchors = getAnchorsGroup();
+    std::vector<Fw::AnchorEdge> anchorsVec;
+    anchorsVec.reserve(anchors.size());
+    for (const auto& anchor : anchors) {
+        anchorsVec.emplace_back(anchor->getAnchoredEdge());
+    }
+
+    return anchorsVec;
+}
+
+Fw::AnchorEdge UIWidget::getAnchorType(Fw::AnchorEdge anchorType) {
+    const auto& anchors = getAnchorsGroup();
+    for (const auto& anchor : anchors) {
+        if (anchor->getAnchoredEdge() == anchorType) {
+            return anchor->getHookedEdge();
+        }
+    }
+
+    return Fw::AnchorNone;
 }
 
 UIWidgetPtr UIWidget::getRootParent()

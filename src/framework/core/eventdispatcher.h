@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -97,6 +97,14 @@ public:
 private:
     thread_local static DispatcherContext dispacherContext;
 
+    enum class ThreadTaskEventState
+    {
+        ADDING,
+        ADDED,
+        MERGING,
+        MERGED,
+    };;
+
     // Thread Events
     struct ThreadTask
     {
@@ -109,8 +117,15 @@ private:
         std::vector<Event> deferEvents;
         std::vector<Event> asyncEvents;
         std::vector<ScheduledEventPtr> scheduledEventList;
-        std::mutex mutex;
-        std::atomic_bool hasEvents;
+        std::atomic<ThreadTaskEventState> state = ThreadTaskEventState::MERGED;
+
+        void waitWhileStateIs(ThreadTaskEventState st) {
+            while (state.load(std::memory_order_acquire) == st); // spinlock
+        }
+
+        void setState(ThreadTaskEventState st) {
+            state.store(st, std::memory_order_release);
+        }
     };
 
     inline void mergeEvents();

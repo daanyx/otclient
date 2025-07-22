@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -179,7 +179,7 @@ DrawPool::PoolState DrawPool::getState(const TexturePtr& texture, const Color& c
     PoolState copy = getCurrentState();
     if (copy.color != color) copy.color = color;
     if (texture) {
-        if (texture->isEmpty()) {
+        if (texture->isEmpty() || !texture->isCached()) {
             copy.texture = texture;
         } else {
             copy.textureId = texture->getId();
@@ -253,7 +253,7 @@ void DrawPool::resetState()
 
 bool DrawPool::canRepaint()
 {
-    if (m_repaint)
+    if (isDrawState(DrawPoolState::READY) || isDrawState(DrawPoolState::DRAWING))
         return false;
 
     uint16_t refreshDelay = m_refreshDelay;

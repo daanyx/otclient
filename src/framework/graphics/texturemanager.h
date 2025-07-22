@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@ private:
 
     struct
     {
-        std::unordered_map<size_t, uint16_t> indexMap;
+        std::unordered_map<uint64_t, uint16_t> indexMap;
         std::vector<std::unique_ptr<Matrix3>> objects;
     } m_matrixCache;
 

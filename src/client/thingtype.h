@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -317,6 +317,7 @@ public:
     void unserializeAppearance(uint16_t clientId, ThingCategory category, const appearances::Appearance& appearance);
     void unserialize(uint16_t clientId, ThingCategory category, const FileStreamPtr& fin);
     void unserializeOtml(const OTMLNodePtr& node);
+    void applyAppearanceFlags(const appearances::AppearanceFlags& flags);
 
 #ifdef FRAMEWORK_EDITOR
     void serialize(const FileStreamPtr& fin);
@@ -450,14 +451,16 @@ public:
     const Timer getLastTimeUsage() const { return m_lastTimeUsage; }
 
     void unload() {
-        for (auto& data : m_textureData)
+        for (auto& data : m_textureData) {
+            if (data.source) data.source->setCached(false);
             data.source = nullptr;
+        }
     }
 
     PLAYER_ACTION getDefaultAction() { return m_defaultAction; }
 
     uint16_t getClassification() { return m_upgradeClassification; }
-    std::vector<uint32_t> getSprites() { return m_spritesIndex; }
+    const auto& getSprites() { return m_spritesIndex; }
 
     // additional
     float getOpacity() { return m_opacity; }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -235,7 +235,7 @@ std::string ResourceManager::readFileContents(const std::string& fileName)
 
     PHYSFS_File* file = PHYSFS_openRead(fullPath.c_str());
     if (!file)
-        throw Exception("unable to open file '%s': %s", fullPath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+        throw Exception("unable to open file '{}': {}", fullPath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 
     const int fileSize = PHYSFS_fileLength(file);
     std::string buffer(fileSize, 0);
@@ -325,7 +325,7 @@ FileStreamPtr ResourceManager::openFile(const std::string& fileName)
 
     PHYSFS_File* file = PHYSFS_openRead(fullPath.c_str());
     if (!file)
-        throw Exception("unable to open file '%s': %s", fullPath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+        throw Exception("unable to open file '{}': {}", fullPath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     return { std::make_shared<FileStream>(fullPath, file, false) };
 }
 
@@ -333,7 +333,7 @@ FileStreamPtr ResourceManager::appendFile(const std::string& fileName) const
 {
     PHYSFS_File* file = PHYSFS_openAppend(fileName.c_str());
     if (!file)
-        throw Exception("failed to append file '%s': %s", fileName, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+        throw Exception("failed to append file '{}': {}", fileName, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     return { std::make_shared<FileStream>(fileName, file, true) };
 }
 
@@ -341,7 +341,7 @@ FileStreamPtr ResourceManager::createFile(const std::string& fileName) const
 {
     PHYSFS_File* file = PHYSFS_openWrite(fileName.c_str());
     if (!file)
-        throw Exception("failed to create file '%s': %s", fileName, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+        throw Exception("failed to create file '{}': {}", fileName, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     return { std::make_shared<FileStream>(fileName, file, true) };
 }
 
@@ -660,7 +660,7 @@ std::string ResourceManager::selfChecksum() {
 }
 
 void ResourceManager::updateFiles(const std::set<std::string>& files) {
-    g_logger.info("Updating client, %i files", files.size());
+    g_logger.info("Updating client, {} files", files.size());
 
     const auto& oldWriteDir = getWriteDir();
     setWriteDir(getWorkDir());
@@ -684,6 +684,7 @@ void ResourceManager::updateFiles(const std::set<std::string>& files) {
         }
     }
     setWriteDir(oldWriteDir);
+    addSearchPath(getWorkDir(), true);
 }
 
 void ResourceManager::updateExecutable(std::string fileName)

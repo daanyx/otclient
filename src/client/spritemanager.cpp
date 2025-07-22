@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -213,8 +213,14 @@ ImagePtr SpriteManager::getSpriteImage(const int id)
 
     const auto threadId = g_app.isLoadingAsyncTexture() ? stdext::getThreadId() : 0;
     if (const auto& sf = m_spritesFiles[threadId % m_spritesFiles.size()]) {
-        std::scoped_lock l(sf->mutex);
-        return m_spritesHd ? getSpriteImageHd(id, sf->file) : getSpriteImage(id, sf->file);
+        if (sf->m_loadingState.exchange(SpriteLoadState::LOADING, std::memory_order_acq_rel) == SpriteLoadState::LOADING)
+            return nullptr;
+
+        auto image = m_spritesHd ? getSpriteImageHd(id, sf->file) : getSpriteImage(id, sf->file);
+
+        sf->m_loadingState.store(SpriteLoadState::LOADED, std::memory_order_release);
+
+        return image;
     }
 
     return nullptr;

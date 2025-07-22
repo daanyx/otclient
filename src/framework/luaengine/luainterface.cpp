@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -73,7 +73,7 @@ void LuaInterface::registerSingletonClass(const std::string_view className)
 
 void LuaInterface::registerClass(const std::string_view className, const std::string_view baseClass)
 {
-    const auto* __className = className.data();
+    const std::string __className = className.data();
 
     // creates the class table (that it's also the class methods table)
     newTable();
@@ -81,17 +81,35 @@ void LuaInterface::registerClass(const std::string_view className, const std::st
     setGlobal(className);
     const int klass = getTop();
 
+    pushString(className);
+    setField("__name", klass);
+
+    pushString(baseClass);
+    setField("__baseName", klass);
+
     // creates the class fieldmethods table
     newTable();
     pushValue();
     setGlobal(__className + "_fieldmethods"s);
     const int klass_fieldmethods = getTop();
 
+    pushString(className);
+    setField("__name", klass_fieldmethods);
+
+    pushString(baseClass);
+    setField("__baseName", klass_fieldmethods);
+
     // creates the class metatable
     newTable();
     pushValue();
     setGlobal(__className + "_mt"s);
     const int klass_mt = getTop();
+
+    pushString(className);
+    setField("__name", klass_mt);
+
+    pushString(baseClass);
+    setField("__baseName", klass_mt);
 
     // set metatable metamethods
     pushCppFunction(&LuaInterface::luaObjectGetEvent);
@@ -228,6 +246,10 @@ int LuaInterface::luaObjectSetEvent(LuaInterface* lua)
     const auto& obj = lua->toObject(-3);
     const auto& key = lua->toString(-2);
     assert(obj);
+
+    if (key.starts_with("on")) {
+        obj->m_events[key] = true;
+    }
 
     lua->remove(-2); // removes key
     lua->insert(-2); // moves obj to the top
