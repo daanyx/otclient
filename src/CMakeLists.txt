@@ -368,6 +368,7 @@ if (TOGGLE_FRAMEWORK_GRAPHICS)
           framework/graphics/bitmapfont.cpp
           framework/graphics/cachedtext.cpp
           framework/graphics/coordsbuffer.cpp
+          framework/graphics/textureatlas.cpp
           framework/graphics/drawpool.cpp
           framework/graphics/drawpoolmanager.cpp
           framework/graphics/fontmanager.cpp
@@ -446,7 +447,7 @@ if(MSVC)
           _WIN32_WINNT=0x0600
   )
 
-  target_compile_options(${PROJECT_NAME} PUBLIC /MP /FS /Zf /EHsc )
+  target_compile_options(${PROJECT_NAME} PUBLIC /MP /FS /Zf /EHsc /bigobj)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")

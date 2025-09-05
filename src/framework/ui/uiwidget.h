@@ -218,8 +218,8 @@ public:
     UIWidgetList recursiveGetChildrenByStyleName(std::string_view styleName);
     UIWidgetPtr backwardsGetWidgetById(std::string_view id);
 
-    void setShader(std::string_view name);
-    bool hasShader() { return m_shader != nullptr; }
+    virtual void setShader(std::string_view name);
+    virtual bool hasShader() { return m_shader != nullptr; }
 
     void setProp(FlagProp prop, bool v, bool callEvent = false);
     bool hasProp(const FlagProp prop) { return (m_flagsProp & prop); }
@@ -228,20 +228,20 @@ public:
     void addOnDestroyCallback(const std::string& id, const std::function<void()>&& callback);
     void removeOnDestroyCallback(const std::string&);
 
-    void setBackgroundDrawOrder(const uint8_t order) { m_backgroundDrawConductor.order = std::min<uint8_t>(order, LAST - 1); }
-    void setImageDrawOrder(const uint8_t order) { m_imageDrawConductor.order = std::min<uint8_t>(order, LAST - 1); }
-    void setIconDrawOrder(const uint8_t order) { m_iconDrawConductor.order = std::min<uint8_t>(order, LAST - 1); }
-    void setTextDrawOrder(const uint8_t order) { m_textDrawConductor.order = std::min<uint8_t>(order, LAST - 1); }
-    void setBorderDrawOrder(const uint8_t order) { m_borderDrawConductor.order = std::min<uint8_t>(order, LAST - 1); }
+    void setBackgroundDrawOrder(const uint8_t order) { m_backgroundDrawOrder = static_cast<DrawOrder>(std::min<uint8_t>(order, LAST - 1)); }
+    void setImageDrawOrder(const uint8_t order) { m_imageDrawOrder = static_cast<DrawOrder>(std::min<uint8_t>(order, LAST - 1)); }
+    void setIconDrawOrder(const uint8_t order) { m_iconDrawOrder = static_cast<DrawOrder>(std::min<uint8_t>(order, LAST - 1)); }
+    void setTextDrawOrder(const uint8_t order) { m_textDrawOrder = static_cast<DrawOrder>(std::min<uint8_t>(order, LAST - 1)); }
+    void setBorderDrawOrder(const uint8_t order) { m_borderDrawOrder = static_cast<DrawOrder>(std::min<uint8_t>(order, LAST - 1)); }
 
 private:
     uint32_t m_flagsProp{ 0 };
     PainterShaderProgramPtr m_shader;
 
-    DrawConductor m_backgroundDrawConductor;
-    DrawConductor m_imageDrawConductor;
-    DrawConductor m_iconDrawConductor;
-    DrawConductor m_borderDrawConductor;
+    DrawOrder m_backgroundDrawOrder{ DrawOrder::FIRST };
+    DrawOrder m_imageDrawOrder{ DrawOrder::FIRST };
+    DrawOrder m_iconDrawOrder{ DrawOrder::FIRST };
+    DrawOrder m_borderDrawOrder{ DrawOrder::FIRST };
 
     // state managment
 protected:
@@ -385,7 +385,7 @@ protected:
     uint16_t m_autoRepeatDelay{ 500 };
     Point m_lastClickPosition;
 
-    DrawConductor m_textDrawConductor;
+    DrawOrder m_textDrawOrder{ DrawOrder::FIRST };
 
 public:
     void setX(const int x) { move(x, getY()); }
@@ -508,7 +508,7 @@ private:
     void updateImageCache() { if (!m_imageCachedScreenCoords.isNull()) m_imageCachedScreenCoords = {}; }
     void configureBorderImage() { setProp(PropImageBordered, true); updateImageCache(); }
 
-    std::vector<std::pair<Rect, Rect>> m_imageCoordsCache;
+    CoordsBufferPtr m_imageCoordsCache;
 
     Rect m_imageCachedScreenCoords;
 
@@ -575,7 +575,6 @@ private:
     void parseTextStyle(const OTMLNodePtr& styleNode);
 
     Rect m_textCachedScreenCoords;
-    std::vector<Point> m_glyphsPositionsCache;
     Size m_textSize;
 
 protected:
@@ -584,6 +583,8 @@ protected:
 
     virtual void onTextChange(std::string_view text, std::string_view oldText);
     virtual void onFontChange(std::string_view font);
+
+    std::vector<Point> m_glyphsPositionsCache;
 
     std::string m_text;
     std::string m_drawText;
@@ -598,6 +599,7 @@ protected:
     std::vector<std::pair<Color, CoordsBufferPtr>> m_colorCoordsBuffer;
 
     float m_fontScale{ 1.f };
+    const AtlasRegion* m_atlasRegion = nullptr;
 
 public:
     void resizeToText();

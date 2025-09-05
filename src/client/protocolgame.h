@@ -207,7 +207,7 @@ private:
     void parseSessionEnd(const InputMessagePtr& msg);
     void parsePing(const InputMessagePtr& msg);
     void parsePingBack(const InputMessagePtr& msg);
-    void parseChallenge(const InputMessagePtr& msg);
+    void parseLoginChallenge(const InputMessagePtr& msg);
     void parseDeath(const InputMessagePtr& msg);
     void parseFloorDescription(const InputMessagePtr& msg);
     void parseMapDescription(const InputMessagePtr& msg);
@@ -244,6 +244,8 @@ private:
     void parseItemClasses(const InputMessagePtr& msg);
     void parseCreatureMark(const InputMessagePtr& msg);
     void parseTrappers(const InputMessagePtr& msg);
+    void parseOpenForge(const InputMessagePtr& msg);
+    void setCreatureVocation(const InputMessagePtr& msg, const uint32_t creatureId) const;
     void addCreatureIcon(const InputMessagePtr& msg, const uint32_t creatureId) const;
     void parseCloseForgeWindow(const InputMessagePtr& msg);
     void parseCreatureData(const InputMessagePtr& msg);

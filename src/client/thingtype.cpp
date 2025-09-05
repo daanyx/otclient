@@ -597,7 +597,7 @@ void ThingType::unserializeOtml(const OTMLNodePtr& node)
     }
 }
 
-void ThingType::drawWithFrameBuffer(const TexturePtr& texture, const Rect& screenRect, const Rect& textureRect, const Color& color, const DrawConductor& conductor) {
+void ThingType::drawWithFrameBuffer(const TexturePtr& texture, const Rect& screenRect, const Rect& textureRect, const Color& color) {
     const int size = static_cast<int>(g_gameConfig.getSpriteSize() * std::max<int>(m_size.area(), 2) * g_drawPool.getScaleFactor());
     const auto& p = (Point(size) - screenRect.size().toPoint()) / 2;
     const auto& destDiff = Rect(screenRect.topLeft() - p, Size{ size });
@@ -606,12 +606,12 @@ void ThingType::drawWithFrameBuffer(const TexturePtr& texture, const Rect& scree
         // Debug
         // g_drawPool.addBoundingRect(Rect(Point(0), destDiff.size()), Color::red);
 
-        g_drawPool.addTexturedRect(Rect(p, screenRect.size()), texture, textureRect, color, conductor);
+        g_drawPool.addTexturedRect(Rect(p, screenRect.size()), texture, textureRect, color);
     } g_drawPool.releaseFrameBuffer(destDiff);
     g_drawPool.resetShaderProgram();
 }
 
-void ThingType::draw(const Point& dest, const int layer, const int xPattern, const int yPattern, const int zPattern, const int animationPhase, const Color& color, const bool drawThings, const LightViewPtr& lightView, const DrawConductor& conductor)
+void ThingType::draw(const Point& dest, const int layer, const int xPattern, const int yPattern, const int zPattern, const int animationPhase, const Color& color, const bool drawThings, const LightViewPtr& lightView)
 {
     if (m_null)
         return;
@@ -641,9 +641,9 @@ void ThingType::draw(const Point& dest, const int layer, const int xPattern, con
         const auto& newColor = m_opacity < 1.0f ? Color(color, m_opacity) : color;
 
         if (g_drawPool.shaderNeedFramebuffer())
-            drawWithFrameBuffer(texture, screenRect, textureRect, newColor, conductor);
+            drawWithFrameBuffer(texture, screenRect, textureRect, newColor);
         else
-            g_drawPool.addTexturedRect(screenRect, texture, textureRect, newColor, conductor);
+            g_drawPool.addTexturedRect(screenRect, texture, textureRect, newColor);
     }
 
     if (lightView && hasLight()) {
@@ -725,9 +725,10 @@ void ThingType::loadTexture(const int animationPhase)
                         if (protobufSupported) {
                             const uint32_t spriteIndex = getSpriteIndex(-1, -1, spriteMask ? 1 : l, x, y, z, animationPhase);
                             auto spriteId = m_spritesIndex[spriteIndex];
-                            const auto& spriteImage = g_sprites.getSpriteImage(spriteId);
+                            bool isLoading = false;
+                            const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
 
-                            if (spriteId != 0 && !spriteImage)
+                            if (isLoading)
                                 return;
 
                             // verifies that the first block in the lower right corner is transparent.
@@ -750,9 +751,10 @@ void ThingType::loadTexture(const int animationPhase)
                                 for (int w = 0; w < m_size.width(); ++w) {
                                     const uint32_t spriteIndex = getSpriteIndex(w, h, spriteMask ? 1 : l, x, y, z, animationPhase);
                                     auto spriteId = m_spritesIndex[spriteIndex];
-                                    const auto& spriteImage = g_sprites.getSpriteImage(spriteId);
+                                    bool isLoading = false;
+                                    const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
 
-                                    if (spriteId != 0 && !spriteImage)
+                                    if (isLoading)
                                         return;
 
                                     // verifies that the first block in the lower right corner is transparent.
@@ -802,7 +804,7 @@ void ThingType::loadTexture(const int animationPhase)
         m_opaque = !fullImage->hasTransparentPixel();
 
     textureData.source = std::make_shared<Texture>(fullImage, true, false);
-    textureData.source->setCached(true);
+    textureData.source->allowAtlasCache();
 }
 
 Size ThingType::getBestTextureDimension(int w, int h, const int count)

@@ -52,9 +52,12 @@ class CoordsBuffer;
 class ApplicationDrawEvents;
 class ApplicationContext;
 class GraphicalApplicationContext;
+class TextureAtlas;
+class AtlasRegion;
 
 using ImagePtr = std::shared_ptr<Image>;
 using TexturePtr = std::shared_ptr<Texture>;
+using TextureAtlasPtr = std::shared_ptr<TextureAtlas>;
 using AnimatedTexturePtr = std::shared_ptr<AnimatedTexture>;
 using BitmapFontPtr = std::shared_ptr<BitmapFont>;
 using CachedTextPtr = std::shared_ptr<CachedText>;

@@ -31,7 +31,6 @@
 
 constexpr uint32_t LUA_TIME = 15 * 60 * 1000; // 15min
 constexpr uint32_t TEXTURE_TIME = 30 * 60 * 1000; // 30min
-constexpr uint32_t DRAWPOOL_TIME = 30 * 60 * 1000; // 30min
 constexpr uint32_t THINGTYPE_TIME = 2 * 1000; // 2seg
 
 Timer lua_timer, texture_timer, drawpool_timer, thingtype_timer;
@@ -43,20 +42,12 @@ void GarbageCollection::poll() {
     if (canCheck(texture_timer, TEXTURE_TIME))
         texture();
 
-    if (canCheck(drawpool_timer, DRAWPOOL_TIME))
-        drawpoll();
-
     if (canCheck(lua_timer, LUA_TIME))
         lua();
 }
 
 void GarbageCollection::lua() {
     g_lua.collectGarbage();
-}
-
-void GarbageCollection::drawpoll() {
-    for (int8_t i = -1; ++i < static_cast<uint8_t>(DrawPoolType::LAST);)
-        g_drawPool.get(static_cast<DrawPoolType>(i))->resetBuffer();
 }
 
 void GarbageCollection::texture() {
@@ -77,7 +68,6 @@ void GarbageCollection::thingType() {
         IDLE_TIME = 60 * 1000, // Maximum time it can be idle, default 60 seconds.
         AMOUNT_PER_CHECK = 500; // maximum number of objects to be checked.
 
-    static std::vector<ThingTypePtr> thingTypesToUnload;
     static uint8_t category{ ThingLastCategory };
     static size_t index = 0;
 
@@ -90,7 +80,7 @@ void GarbageCollection::thingType() {
     while (index < limit) {
         auto& thing = thingTypes[index];
         if (thing->hasTexture() && thing->getLastTimeUsage().ticksElapsed() > IDLE_TIME) {
-            thingTypesToUnload.emplace_back(thing);
+            thing->unload();
         }
         ++index;
     }
@@ -98,12 +88,5 @@ void GarbageCollection::thingType() {
     if (limit == thingTypes.size()) {
         index = 0;
         ++category;
-    }
-
-    if (!thingTypesToUnload.empty()) {
-        for (auto& thingType : thingTypesToUnload) {
-            thingType->unload();
-        }
-        thingTypesToUnload.clear();
     }
 }

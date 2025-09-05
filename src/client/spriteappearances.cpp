@@ -69,7 +69,7 @@ bool SpriteAppearances::loadSpriteSheet(const SpriteSheetPtr& sheet) const
         const auto& fin = g_resources.openFile(path);
         fin->cache(true);
 
-        const auto decompressed = std::make_unique<uint8_t[]>(LZMA_UNCOMPRESSED_SIZE); // uncompressed size, bmp file + 122 bytes header
+        thread_local static std::array<uint8_t, LZMA_UNCOMPRESSED_SIZE> decompressBuffer;
 
         /*
            CIP's header, always 32 (0x20) bytes.
@@ -114,56 +114,63 @@ bool SpriteAppearances::loadSpriteSheet(const SpriteSheetPtr& sheet) const
             throw stdext::exception(fmt::format("failed to initialize lzma raw decoder result: {}", ret));
         }
 
-        stream.next_in = &fin->m_data.data()[fin->tell()];
-        stream.next_out = decompressed.get();
-        stream.avail_in = fin->size();
-        stream.avail_out = LZMA_UNCOMPRESSED_SIZE;
+        stream.next_in = &fin->m_data[fin->tell()];
+        stream.avail_in = fin->size() - fin->tell();
+        stream.next_out = decompressBuffer.data();
+        stream.avail_out = decompressBuffer.size();
 
-        ret = lzma_code(&stream, LZMA_RUN);
-        if (ret != LZMA_STREAM_END) {
-            throw stdext::exception(fmt::format("failed to decode lzma buffer result: {}", ret));
-        }
+        const auto result = lzma_code(&stream, LZMA_RUN);
+        lzma_end(&stream);
 
-        lzma_end(&stream); // free memory
+        if (result != LZMA_STREAM_END)
+            throw stdext::exception("LZMA decompression failed");
 
-        // pixel data start (bmp header end offset)
-        uint32_t data;
-        std::memcpy(&data, decompressed.get() + 10, sizeof(uint32_t));
+        // pixel offset
+        const uint8_t* bmpOffsetPtr = decompressBuffer.data() + 10;
+        const uint32_t bmpDataOffset =
+            bmpOffsetPtr[0] |
+            (bmpOffsetPtr[1] << 8) |
+            (bmpOffsetPtr[2] << 16) |
+            (bmpOffsetPtr[3] << 24);
 
-        uint8_t* bufferStart = decompressed.get() + data;
+        // validate offset
+        if (bmpDataOffset + BYTES_IN_SPRITE_SHEET > LZMA_UNCOMPRESSED_SIZE)
+            throw stdext::exception("sprite sheet image offset out of bounds");
 
-        // reverse channels
-        for (uint8_t* itr = bufferStart; itr < bufferStart + BYTES_IN_SPRITE_SHEET; itr += 4) {
-            std::swap(*(itr + 0), *(itr + 2));
-        }
+        uint8_t* bufferStart = decompressBuffer.data() + bmpDataOffset;
 
-        // flip vertically
-        for (int y = 0; y < 192; ++y) {
-            uint8_t* itr1 = &bufferStart[y * SPRITE_SHEET_WIDTH_BYTES];
-            uint8_t* itr2 = &bufferStart[(SpriteSheet::SIZE - y - 1) * SPRITE_SHEET_WIDTH_BYTES];
+        // swap BGR ? RGB and fix magenta
+        for (int i = 0; i < BYTES_IN_SPRITE_SHEET; i += 4) {
+            std::swap(bufferStart[i], bufferStart[i + 2]); // B <-> R
 
-            for (std::size_t x = 0; x < SPRITE_SHEET_WIDTH_BYTES; ++x) {
-                std::swap(*(itr1 + x), *(itr2 + x));
+            const uint32_t rgb = bufferStart[i] | (bufferStart[i + 1] << 8) | (bufferStart[i + 2] << 16);
+            if (rgb == 0xFF00FF) {
+                bufferStart[i + 0] = 0x00;
+                bufferStart[i + 1] = 0x00;
+                bufferStart[i + 2] = 0x00;
+                bufferStart[i + 3] = 0x00;
             }
         }
 
-        // fix magenta
-        for (int offset = 0; offset < BYTES_IN_SPRITE_SHEET; offset += 4) {
-            std::memcpy(&data, bufferStart + offset, 4);
-            if (data == 0xFF00FF) {
-                std::memset(bufferStart + offset, 0x00, 4);
-            }
+        // vertical flip
+        constexpr int halfHeight = SpriteSheet::SIZE / 2;
+        uint8_t tempLine[SPRITE_SHEET_WIDTH_BYTES];
+        for (int y = 0; y < halfHeight; ++y) {
+            uint8_t* top = bufferStart + y * SPRITE_SHEET_WIDTH_BYTES;
+            uint8_t* bottom = bufferStart + (SpriteSheet::SIZE - 1 - y) * SPRITE_SHEET_WIDTH_BYTES;
+
+            std::memcpy(tempLine, top, SPRITE_SHEET_WIDTH_BYTES);
+            std::memcpy(top, bottom, SPRITE_SHEET_WIDTH_BYTES);
+            std::memcpy(bottom, tempLine, SPRITE_SHEET_WIDTH_BYTES);
         }
 
-        sheet->data = std::make_unique<uint8_t[]>(LZMA_UNCOMPRESSED_SIZE);
+        sheet->data = std::make_unique<uint8_t[]>(BYTES_IN_SPRITE_SHEET);
         std::memcpy(sheet->data.get(), bufferStart, BYTES_IN_SPRITE_SHEET);
 
         sheet->m_loadingState.store(SpriteLoadState::LOADED, std::memory_order_release);
-
         return true;
     } catch (const std::exception& e) {
         sheet->m_loadingState.store(SpriteLoadState::NONE, std::memory_order_release);
-
         g_logger.error("Failed to load single sprite sheet '{}': {}", sheet->file, e.what());
         return false;
     }
@@ -175,7 +182,7 @@ void SpriteAppearances::unload()
     m_sheets.clear();
 }
 
-SpriteSheetPtr SpriteAppearances::getSheetBySpriteId(const int id, const bool load /* = true */)
+SpriteSheetPtr SpriteAppearances::getSheetBySpriteId(const int id, bool& isLoading, const bool load /* = true */)
 {
     if (id == 0) {
         return nullptr;
@@ -191,16 +198,18 @@ SpriteSheetPtr SpriteAppearances::getSheetBySpriteId(const int id, const bool lo
 
     const auto& sheet = *sheetIt;
 
-    if (load && !loadSpriteSheet(sheet))
+    if (load && !loadSpriteSheet(sheet)) {
+        isLoading = sheet->m_loadingState == SpriteLoadState::LOADING;
         return nullptr;
+    }
 
     return sheet;
 }
 
-ImagePtr SpriteAppearances::getSpriteImage(const int id)
+ImagePtr SpriteAppearances::getSpriteImage(const int id, bool& isLoading)
 {
     try {
-        const auto& sheet = getSheetBySpriteId(id);
+        const auto& sheet = getSheetBySpriteId(id, isLoading, true);
         if (!sheet) {
             return nullptr;
         }
@@ -224,8 +233,9 @@ ImagePtr SpriteAppearances::getSpriteImage(const int id)
         if (!image->hasTransparentPixel()) {
             // The image must be more than 4 pixels transparent to be considered transparent.
             uint8_t cntTrans = 0;
-            for (const uint8_t pixel : image->getPixels()) {
-                if (pixel == 0x00 && ++cntTrans > 4) {
+            const auto& buf = image->getPixels();
+            for (size_t i = 3, n = buf.size(); i < n; i += 4) {
+                if (buf[i] == 0x00 && ++cntTrans > 4) {
                     image->setTransparentPixel(true);
                     break;
                 }

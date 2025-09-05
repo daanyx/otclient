@@ -60,6 +60,15 @@ public:
     void setBlessings(uint16_t blessings);
     void setResourceBalance(Otc::ResourceTypes_t type, uint64_t value);
     void takeScreenshot(uint8_t type);
+    void setFlatDamageHealing(uint16_t flatBonus);
+    void setAttackInfo(uint16_t attackValue, uint8_t attackElement);
+    void setConvertedDamage(double convertedDamage, uint8_t convertedElement);
+    void setImbuements(double lifeLeech, double manaLeech, double critChance, double critDamage, double onslaught);
+    void setDefenseInfo(uint16_t defense, uint16_t armor, double mitigation, double dodge, uint16_t damageReflection);
+    void setCombatAbsorbValues(const std::map<uint8_t, double>& absorbValues);
+    void setForgeBonuses(double momentum, double transcendence, double amplification);
+    void setExperienceRate(Otc::ExperienceRate_t type, uint16_t value);
+    void setStoreExpBoostTime(uint16_t value);
 
     uint32_t getFreeCapacity() { return m_freeCapacity; }
     uint32_t getTotalCapacity() { return m_totalCapacity; }
@@ -79,6 +88,7 @@ public:
     uint16_t getBlessings() { return m_blessings; }
     uint16_t getRegenerationTime() { return m_regenerationTime; }
     uint16_t getOfflineTrainingTime() { return m_offlineTrainingTime; }
+    uint16_t getStoreExpBoostTime() { return m_offlineTrainingTime; }
 
     uint32_t getStates() { return m_states; }
     uint32_t getMana() { return m_mana; }
@@ -122,6 +132,7 @@ public:
 
     Position getPosition() override { return isPreWalking() ? m_preWalks.back() : m_position; }
     void resetPreWalk() { m_preWalks.clear(); }
+    auto getPreWalkingSize() { return m_preWalks.size(); }
 
 private:
     struct Skill
@@ -136,7 +147,8 @@ private:
     void walk(const Position& oldPos, const Position& newPos) override;
     void terminateWalk() override;
     void cancelWalk(Otc::Direction direction = Otc::InvalidDirection);
-    void cancelAjustInvalidPosEvent();
+    void cancelAdjustInvalidPosEvent();
+    void registerAdjustInvalidPosEvent();
 
     bool retryAutoWalk();
 
@@ -145,7 +157,7 @@ private:
     Position m_autoWalkDestination;
     std::deque<Position> m_preWalks;
 
-    ScheduledEventPtr m_ajustInvalidPosEvent;
+    ScheduledEventPtr m_adjustInvalidPosEvent;
     ScheduledEventPtr m_autoWalkContinueEvent;
     ticks_t m_walkLockExpiration{ 0 };
 
@@ -161,6 +173,8 @@ private:
     std::vector<uint16_t> m_spells;
 
     stdext::map<Otc::ResourceTypes_t, uint64_t> m_resourcesBalance;
+    std::map<uint8_t, double> m_combatAbsorbValues;
+    std::map<Otc::ExperienceRate_t, uint16_t> m_experienceRates;
 
     uint8_t m_autoWalkRetries{ 0 };
 
@@ -185,6 +199,29 @@ private:
     uint16_t m_stamina{ 0 };
     uint16_t m_regenerationTime{ 0 };
     uint16_t m_offlineTrainingTime{ 0 };
+    uint16_t m_storeExpBoostTime{ 0 };
+
+    uint8_t m_attackElement{ 0 };
+    uint8_t m_convertedElement{ 0 };
+
+    uint16_t m_flatDamageHealing{ 0 };
+    uint16_t m_attackValue{ 0 };
+    uint16_t m_defense{ 0 };
+    uint16_t m_armor{ 0 };
+    uint16_t m_damageReflection{ 0 };
+
+    double m_convertedDamage{ 0 };
+    double m_lifeLeech{ 0 };
+    double m_manaLeech{ 0 };
+    double m_critChance{ 0 };
+    double m_critDamage{ 0 };
+    double m_onslaught{ 0 };
+    double m_mitigation{ 0 };
+    double m_dodge{ 0 };
+    double m_momentum{ 0 };
+    double m_transcendence{ 0 };
+    double m_amplification{ 0 };
 
     friend class Game;
+    friend class Creature;
 };

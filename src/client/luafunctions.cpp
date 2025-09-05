@@ -130,8 +130,6 @@ void Client::registerLuaFunctions()
 
     g_lua.registerSingletonClass("g_map");
     g_lua.bindSingletonFunction("g_map", "isLookPossible", &Map::isLookPossible, &g_map);
-    g_lua.bindSingletonFunction("g_map", "isCovered", &Map::isCovered, &g_map);
-    g_lua.bindSingletonFunction("g_map", "isCompletelyCovered", &Map::isCompletelyCovered, &g_map);
     g_lua.bindSingletonFunction("g_map", "addThing", &Map::addThing, &g_map);
     g_lua.bindSingletonFunction("g_map", "addStaticText", &Map::addStaticText, &g_map);
     g_lua.bindSingletonFunction("g_map", "addAnimatedText", &Map::addAnimatedText, &g_map);
@@ -627,6 +625,9 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Creature>("clearText", &Creature::clearText);
     g_lua.bindClassMemberFunction<Creature>("canShoot", &Creature::canShoot);
 
+    g_lua.bindClassMemberFunction<Creature>("setVocation", &Creature::setVocation);
+    g_lua.bindClassMemberFunction<Creature>("getVocation", &Creature::getVocation);
+
 #ifdef FRAMEWORK_EDITOR
     g_lua.registerClass<ItemType>();
     g_lua.bindClassMemberFunction<ItemType>("getServerId", &ItemType::getServerId);
@@ -863,6 +864,7 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<LocalPlayer>("getSoul", &LocalPlayer::getSoul);
     g_lua.bindClassMemberFunction<LocalPlayer>("getStamina", &LocalPlayer::getStamina);
     g_lua.bindClassMemberFunction<LocalPlayer>("getOfflineTrainingTime", &LocalPlayer::getOfflineTrainingTime);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getStoreExpBoostTime", &LocalPlayer::getStoreExpBoostTime);
     g_lua.bindClassMemberFunction<LocalPlayer>("getRegenerationTime", &LocalPlayer::getRegenerationTime);
     g_lua.bindClassMemberFunction<LocalPlayer>("getBaseMagicLevel", &LocalPlayer::getBaseMagicLevel);
     g_lua.bindClassMemberFunction<LocalPlayer>("getTotalCapacity", &LocalPlayer::getTotalCapacity);
@@ -903,13 +905,16 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Tile>("isWalkable", &Tile::isWalkable);
     g_lua.bindClassMemberFunction<Tile>("hasElevation", &Tile::hasElevation);
 
+    g_lua.bindClassMemberFunction<Tile>("isCovered", &Tile::isCovered);
+    g_lua.bindClassMemberFunction<Tile>("isCompletelyCovered", &Tile::isCompletelyCovered);
     g_lua.bindClassMemberFunction<Tile>("isFullGround", &Tile::isFullGround);
     g_lua.bindClassMemberFunction<Tile>("isFullyOpaque", &Tile::isFullyOpaque);
     g_lua.bindClassMemberFunction<Tile>("isLookPossible", &Tile::isLookPossible);
-    g_lua.bindClassMemberFunction<Tile>("hasCreatures", &Tile::hasCreatures);
     g_lua.bindClassMemberFunction<Tile>("isEmpty", &Tile::isEmpty);
     g_lua.bindClassMemberFunction<Tile>("isClickable", &Tile::isClickable);
     g_lua.bindClassMemberFunction<Tile>("isPathable", &Tile::isPathable);
+
+    g_lua.bindClassMemberFunction<Tile>("hasCreatures", &Tile::hasCreatures);
 
     g_lua.bindClassMemberFunction<Tile>("select", &Tile::select);
     g_lua.bindClassMemberFunction<Tile>("unselect", &Tile::unselect);

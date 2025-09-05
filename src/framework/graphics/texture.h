@@ -48,6 +48,9 @@ public:
     const Size& getSize() const { return m_size; }
     auto getTransformMatrixId() const { return m_transformMatrixId; }
 
+    const auto getAtlasRegion(Fw::TextureAtlasType type) const { return m_atlas[type]; }
+    const AtlasRegion* getAtlasRegion() const;
+
     ticks_t getTime() const { return m_time; }
     uint32_t getId() const { return m_id; }
     uint32_t getUniqueId() const { return m_uniqueId; }
@@ -56,13 +59,15 @@ public:
     int getWidth() const { return m_size.width(); }
     int getHeight() const { return m_size.height(); }
 
+    virtual bool isAnimatedTexture() const { return false; }
     bool isEmpty() const { return m_id == 0; }
     bool hasRepeat() const { return getProp(repeat); }
     bool hasMipmaps() const { return getProp(hasMipMaps); }
-    bool isCached() const { return getProp(cached); }
-    virtual void setCached(bool v) { setProp(cached, v); }
-    virtual bool isAnimatedTexture() const { return false; }
+    bool isSmooth() const { return getProp(smooth); }
+    bool canCacheInAtlas() const { return getProp(Prop::_allowAtlasCache); }
     bool setupSize(const Size& size);
+
+    virtual void allowAtlasCache();
 
 protected:
     void bind();
@@ -74,6 +79,8 @@ protected:
     void generateHash() { m_hash = stdext::hash_int(m_id > 0 ? m_id : m_uniqueId); }
 
     const uint32_t m_uniqueId;
+
+    std::array<AtlasRegion*, Fw::TextureAtlasType::LAST> m_atlas{ };
 
     uint32_t m_id{ 0 };
     ticks_t m_time{ 0 };
@@ -94,7 +101,7 @@ protected:
         repeat = 1 << 3,
         compress = 1 << 4,
         buildMipmaps = 1 << 5,
-        cached = 1 << 6
+        _allowAtlasCache = 1 << 6
     };
 
     uint16_t m_props{ 0 };
@@ -103,4 +110,5 @@ protected:
 
     friend class GarbageCollection;
     friend class TextureManager;
+    friend class TextureAtlas;
 };

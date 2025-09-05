@@ -25,10 +25,12 @@
 #include "graphics.h"
 #include "image.h"
 #include "texturemanager.h"
+#include "textureatlas.h"
 
 #include <framework/core/application.h>
 #include <framework/core/eventdispatcher.h>
 #include <framework/core/graphicalapplication.h>
+#include "drawpoolmanager.h"
 
  // UINT16_MAX = just to avoid conflicts with GL generated ID.
 static std::atomic_uint32_t UID(UINT16_MAX);
@@ -63,7 +65,8 @@ Texture::~Texture()
     assert(!g_app.isTerminated());
 #endif
     if (g_graphics.ok() && m_id != 0) {
-        g_mainDispatcher.addEvent([id = m_id] {
+        g_mainDispatcher.addEvent([id = m_id, smooth = isSmooth()]() mutable {
+            g_drawPool.removeTextureFromAtlas(id, smooth);
             glDeleteTextures(1, &id);
         });
     }
@@ -126,10 +129,21 @@ void Texture::setSmooth(const bool smooth)
         return;
 
     setProp(Prop::smooth, smooth);
+
     if (!m_id) return;
 
-    bind();
-    setupFilters();
+    if (!canCacheInAtlas()) {
+        bind();
+        setupFilters();
+    } else
+        g_drawPool.removeTextureFromAtlas(m_id, !smooth);
+}
+
+void Texture::allowAtlasCache() {
+    bool smooth = isSmooth();
+    if (smooth) setSmooth(false);
+    setProp(Prop::_allowAtlasCache, true);
+    setSmooth(smooth);
 }
 
 void Texture::setRepeat(const bool repeat)
@@ -138,6 +152,7 @@ void Texture::setRepeat(const bool repeat)
         return;
 
     setProp(Prop::repeat, repeat);
+
     if (!m_id) return;
 
     bind();
@@ -214,6 +229,16 @@ void Texture::setupFilters() const
 void Texture::setupTranformMatrix()
 {
     m_transformMatrixId = g_textures.getMatrixId(m_size, getProp(upsideDown));
+}
+
+const AtlasRegion* Texture::getAtlasRegion() const {
+    if (g_drawPool.isValid() && g_drawPool.getAtlas()) {
+        if (const auto region = m_atlas[g_drawPool.getAtlas()->getType()]) {
+            return region->isEnabled() ? region : nullptr;
+        }
+    }
+
+    return nullptr;
 }
 
 void Texture::setupPixels(const int level, const Size& size, const uint8_t* pixels, const int channels, const bool

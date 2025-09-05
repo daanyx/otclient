@@ -225,6 +225,8 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         }
     }
 
+    g_drawPool.setDrawOrder(DrawOrder::SECOND);
+
     if (drawFlags & Otc::DrawNames) {
         m_name.draw(textRect, fillColor);
 
@@ -266,6 +268,8 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
             ++iconOffset;
         }
     }
+
+    g_drawPool.resetDrawOrder();
 }
 
 void Creature::internalDraw(Point dest, const Color& color)
@@ -683,9 +687,7 @@ void Creature::nextWalkUpdate()
 
 void Creature::updateWalk()
 {
-    const int stepDuration = getStepDuration(true);
-    const float stabilizeCam = isCameraFollowing() && g_window.vsyncEnabled() ? 6.f : 0.f;
-    const float walkTicksPerPixel = (stepDuration + stabilizeCam) / static_cast<float>(g_gameConfig.getSpriteSize());
+    const float walkTicksPerPixel = getStepDuration(true) / static_cast<float>(g_gameConfig.getSpriteSize());
 
     const int totalPixelsWalked = std::min<int>(m_walkTimer.ticksElapsed() / walkTicksPerPixel, g_gameConfig.getSpriteSize());
 
@@ -840,6 +842,9 @@ void Creature::setSpeed(uint16_t speed)
         } else m_calculatedStepSpeed = 1;
     }
 
+    if (isLocalPlayer())
+        static_self_cast<LocalPlayer>()->registerAdjustInvalidPosEvent();
+
     // speed can change while walking (utani hur, paralyze, etc..)
     if (m_walking)
         nextWalkUpdate();
@@ -951,18 +956,21 @@ int getSmoothedElevation(const Creature* creature, const int currentElevation, c
 }
 
 int Creature::getDrawElevation() {
-    int elevation = 0;
     if (m_walkingTile) {
-        elevation = m_walkingTile->getDrawElevation();
+        int elevation = m_walkingTile->getDrawElevation();
 
         if (g_game.getFeature(Otc::GameSmoothWalkElevation)) {
             const float factor = std::clamp<float>(getWalkTicksElapsed() / static_cast<float>(m_stepCache.getDuration(m_lastStepDirection)), .0f, 1.f);
             elevation = getSmoothedElevation(this, elevation, factor);
         }
-    } else if (const auto& tile = getTile())
-        elevation = tile->getDrawElevation();
 
-    return elevation;
+        return elevation;
+    }
+
+    if (const auto& tile = g_map.getTile(getPosition()))
+        return tile->getDrawElevation();
+
+    return 0;
 }
 
 bool Creature::hasSpeedFormula() { return g_game.getFeature(Otc::GameNewSpeedLaw) && speedA != 0 && speedB != 0 && speedC != 0; }
@@ -1009,12 +1017,9 @@ uint16_t Creature::getStepDuration(const bool ignoreDiagonal, const Otc::Directi
 
     auto duration = ignoreDiagonal ? m_stepCache.duration : m_stepCache.getDuration(m_lastStepDirection);
 
-    if (isCameraFollowing() && g_game.getFeature(Otc::GameLatencyAdaptiveCamera) && static_self_cast<LocalPlayer>()->isPreWalking()) {
-        if (m_lastMapDuration == -1)
-            m_lastMapDuration = ((g_game.mapUpdatedAt() + 9) / 10) * 10;
-
-        // stabilizes camera transition with server response time to keep movement fluid.
-        duration = std::max<int>(duration, m_lastMapDuration);
+    if (isCameraFollowing() && isLocalPlayer()) {
+        const auto& localPlayer = static_self_cast<LocalPlayer>();
+        duration += 10 * std::max<int>(1, localPlayer->getPreWalkingSize());
     }
 
     return duration;
