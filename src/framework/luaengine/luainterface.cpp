@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -655,11 +655,26 @@ int LuaInterface::luaCppFunctionCallback(lua_State*)
         --g_lua.m_cppCallbackDepth;
         assert(numRets == g_lua.stackSize());
     } catch (stdext::exception& e) {
+        --g_lua.m_cppCallbackDepth;
         // cleanup stack
         while (g_lua.stackSize() > 0)
             g_lua.pop();
         numRets = 0;
         g_lua.pushString(fmt::format("C++ call failed: {}", g_lua.traceback(e.what())));
+        g_lua.error();
+    } catch (const std::exception& e) {
+        --g_lua.m_cppCallbackDepth;
+        while (g_lua.stackSize() > 0)
+            g_lua.pop();
+        numRets = 0;
+        g_lua.pushString(fmt::format("C++ std::exception: {}", g_lua.traceback(e.what())));
+        g_lua.error();
+    } catch (...) {
+        --g_lua.m_cppCallbackDepth;
+        while (g_lua.stackSize() > 0)
+            g_lua.pop();
+        numRets = 0;
+        g_lua.pushString(g_lua.traceback("Unknown C++ exception"));
         g_lua.error();
     }
 

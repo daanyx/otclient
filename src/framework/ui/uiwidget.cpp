@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,21 @@
  */
 
 #include "uiwidget.h"
+
 #include "uianchorlayout.h"
 #include "uimanager.h"
 #include "uitranslator.h"
-
-#include <framework/core/eventdispatcher.h>
-#include <framework/luaengine/luainterface.h>
-#include <framework/otml/otmlnode.h>
-#include <framework/platform/platformwindow.h>
-
-#include <algorithm>
-
-#include <ranges>
-
+#include "framework/core/eventdispatcher.h"
+#include <framework/core/graphicalapplication.h>
+#include "framework/graphics/drawpool.h"
 #include "framework/graphics/drawpoolmanager.h"
 #include "framework/graphics/shadermanager.h"
+#include <framework/graphics/bitmapfont.h>
+#include "framework/html/htmlmanager.h"
+#include "framework/html/htmlnode.h"
+#include "framework/otml/otmlnode.h"
+#include <framework/platform/platformwindow.h>
+#include <framework/util/stats.h>
 
 UIWidget::UIWidget()
 {
@@ -54,11 +54,14 @@ UIWidget::UIWidget()
     setProp(PropFocusable, true, false);
     setProp(PropFirstOnStyle, true, false);
 
+    m_positions.set(Unit::Auto);
     m_clickTimer.stop();
 
     initBaseStyle();
     initText();
     initImage();
+
+    g_stats.addWidget(this);
 }
 
 UIWidget::~UIWidget()
@@ -68,6 +71,8 @@ UIWidget::~UIWidget()
     if (!isDestroyed())
         g_logger.warning("widget '{}' was not explicitly destroyed", m_id);
 #endif
+
+    g_stats.removeWidget(this);
 }
 
 void UIWidget::draw(const Rect& visibleRect, const DrawPoolType drawPane)
@@ -129,12 +134,24 @@ void UIWidget::drawChildren(const Rect& visibleRect, const DrawPoolType drawPane
     // draw children
     for (const auto& child : m_children) {
         // render only visible children with a valid rect inside parent rect
-        if (!child || !child->isExplicitlyVisible() || !child->getRect().isValid() || child->getOpacity() <= Fw::MIN_ALPHA)
+        if (!child || !child->isExplicitlyVisible() || child->getOpacity() <= Fw::MIN_ALPHA)
             continue;
 
-        const auto& childVisibleRect = visibleRect.intersection(child->getRect());
-        if (!childVisibleRect.isValid())
+        auto childVisibleRect = visibleRect;
+        if (child->getDisplay() == DisplayType::None)
             continue;
+
+        if (!child->isOnHtml() && !child->getRect().isValid())
+            continue;
+
+        childVisibleRect = visibleRect.intersection(child->getRect());
+        if (!childVisibleRect.isValid()) {
+            if (m_overflowType != OverflowType::Visible) {
+                continue;
+            }
+
+            childVisibleRect = visibleRect;
+        }
 
         // store current graphics opacity
         const float oldOpacity = g_drawPool.getOpacity();
@@ -189,6 +206,10 @@ void UIWidget::addChild(const UIWidgetPtr& child)
 
     // add to layout and updates it
     m_layout->addWidget(child);
+    if (m_htmlNode && child->m_htmlNode) {
+        m_htmlNode->append(child->m_htmlNode);
+        refreshHtml();
+    }
 
     // update new child states
     child->updateStates();
@@ -242,7 +263,7 @@ void UIWidget::insertChild(int32_t index, const UIWidgetPtr& child)
 
     { // cache index
         child->m_childIndex = index + 1;
-        for (auto i = child->m_childIndex; i < childrenSize; ++i)
+        for (auto i = child->m_childIndex; i < m_children.size(); ++i)
             m_children[i]->m_childIndex = i + 1;
     }
 
@@ -254,12 +275,22 @@ void UIWidget::insertChild(int32_t index, const UIWidgetPtr& child)
 
     // add to layout and updates it
     m_layout->addWidget(child);
+    if (m_htmlNode && child->m_htmlNode) {
+        m_htmlNode->insert(child->m_htmlNode, index);
+        refreshHtml(true);
+    }
 
     // update new child states
     child->updateStates();
     updateChildrenIndexStates();
 
     g_ui.onWidgetAppear(child);
+}
+
+void UIWidget::removeChildByIndex(uint32_t index) {
+    if (const auto& child = getChildByIndex(index)) {
+        removeChild(child);
+    }
 }
 
 void UIWidget::removeChild(const UIWidgetPtr& child)
@@ -293,6 +324,11 @@ void UIWidget::removeChild(const UIWidgetPtr& child)
 
         if (m_layout)
             m_layout->removeWidget(child);
+
+        if (m_htmlNode && child->m_htmlNode) {
+            m_htmlNode->remove(child->m_htmlNode);
+            refreshHtml(true);
+        }
 
         // remove access to child via widget.childId
         if (child->hasProp(PropCustomId)) {
@@ -455,6 +491,12 @@ void UIWidget::lowerChild(const UIWidgetPtr& child)
     m_children.erase(it);
     m_children.emplace_front(child);
 
+    if (m_htmlNode && child->m_htmlNode) {
+        m_htmlNode->remove(child->m_htmlNode);
+        m_htmlNode->prepend(child->m_htmlNode);
+        refreshHtml(true);
+    }
+
     { // cache index
         for (int i = (child->m_childIndex = 1), s = m_children.size(); i < s; ++i)
             m_children[i]->m_childIndex = i + 1;
@@ -480,6 +522,12 @@ void UIWidget::raiseChild(const UIWidgetPtr& child)
 
     m_children.erase(it);
     m_children.emplace_back(child);
+
+    if (m_htmlNode && child->m_htmlNode) {
+        m_htmlNode->remove(child->m_htmlNode);
+        m_htmlNode->append(child->m_htmlNode);
+        refreshHtml(true);
+    }
 
     { // cache index
         for (int i = child->m_childIndex - 1, s = m_children.size(); i < s; ++i)
@@ -517,6 +565,12 @@ void UIWidget::moveChildToIndex(const UIWidgetPtr& child, const int index)
     m_children.erase(it);
     m_children.insert(m_children.begin() + (index - 1), child);
 
+    if (m_htmlNode && child->m_htmlNode) {
+        m_htmlNode->remove(child->m_htmlNode);
+        m_htmlNode->insert(child->m_htmlNode, index - 1);
+        refreshHtml(true);
+    }
+
     { // cache index
         auto start = child->m_childIndex;
         auto end = index;
@@ -540,9 +594,14 @@ void UIWidget::reorderChildren(const std::vector<UIWidgetPtr>& childrens) {
     }
 
     m_children.clear();
+    if (m_htmlNode) m_htmlNode->clear();
     for (const auto& children : childrens) {
         m_children.push_back(children);
+        if (m_htmlNode)
+            m_htmlNode->append(children->m_htmlNode);
     }
+
+    refreshHtml();
 
     updateChildrenIndexStates();
     updateLayout();
@@ -730,6 +789,20 @@ void UIWidget::breakAnchors()
         anchorLayout->removeAnchors(static_self_cast<UIWidget>());
 }
 
+void UIWidget::resetAnchors()
+{
+    if (isDestroyed())
+        return;
+
+    if (const auto& anchorLayout = getAnchoredLayout()) {
+        auto it = anchorLayout->getAnchorsGroup().find(static_self_cast<UIWidget>());
+        if (it == anchorLayout->getAnchorsGroup().end())
+            return;
+
+        it->second->reset();
+    }
+}
+
 void UIWidget::updateParentLayout()
 {
     if (isDestroyed())
@@ -871,6 +944,7 @@ void UIWidget::internalDestroy()
         m_layout->setParent(nullptr);
         m_layout = nullptr;
     }
+
     m_parent = nullptr;
     m_lockedChildren.clear();
     m_childrenById.clear();
@@ -888,6 +962,11 @@ void UIWidget::internalDestroy()
     releaseLuaFieldsTable();
 
     g_ui.onWidgetDestroy(static_self_cast<UIWidget>());
+
+    if (m_htmlNode) {
+        m_htmlNode->destroy();
+        m_htmlNode = nullptr;
+    }
 }
 
 void UIWidget::destroy()
@@ -1050,6 +1129,12 @@ bool UIWidget::setRect(const Rect& rect)
         clampedRect = rect.clamp(minSize, maxSize);
     }
 
+    if (!isOnHtml()) {
+        if (m_width.unit == Unit::Px)
+            m_width.valueCalculed = clampedRect.width();
+        if (m_height.unit == Unit::Px)
+            m_height.valueCalculed = clampedRect.height();
+    }
     /*
     if(rect.width() > 8192 || rect.height() > 8192) {
         g_logger.error("attempt to set huge rect size ({}) for {}", stdext::to_string(rect), m_id);
@@ -1150,6 +1235,8 @@ void UIWidget::setVisible(const bool visible)
         g_ui.onWidgetAppear(static_self_cast<UIWidget>());
     else
         g_ui.onWidgetDisappear(static_self_cast<UIWidget>());
+
+    refreshHtml(true);
 }
 
 void UIWidget::setOn(const bool on)
@@ -1293,11 +1380,9 @@ UIAnchorLayoutPtr UIWidget::getAnchoredLayout()
 
 UIAnchorList UIWidget::getAnchorsGroup() {
     if (const auto& layout = getAnchoredLayout()) {
-        const auto& self = static_self_cast<UIWidget>();
-        if (layout->hasAnchors(self)) {
-            const auto& anchors = layout->getAnchorsGroup()[self]->getAnchors();
-            return anchors;
-        }
+        auto it = layout->getAnchorsGroup().find(static_self_cast<UIWidget>());
+        if (it != layout->getAnchorsGroup().end())
+            return it->second->getAnchors();
     }
 
     return {};
@@ -1400,15 +1485,15 @@ UIWidgetPtr UIWidget::recursiveGetChildById(const std::string_view id)
 
 UIWidgetPtr UIWidget::recursiveGetChildByPos(const Point& childPos, const bool wantsPhantom)
 {
-    if (!containsPaddingPoint(childPos))
+    if (isClipping() && !containsPaddingPoint(childPos))
         return nullptr;
 
     for (auto& child : std::ranges::reverse_view(m_children)) {
-        if (child->isExplicitlyVisible() && child->containsPoint(childPos)) {
+        if (child->isExplicitlyVisible()) {
             if (const auto& subChild = child->recursiveGetChildByPos(childPos, wantsPhantom))
                 return subChild;
 
-            if (wantsPhantom || !child->isPhantom())
+            if (child->containsPoint(childPos) && (wantsPhantom || !child->isPhantom()))
                 return child;
         }
     }
@@ -1444,16 +1529,17 @@ UIWidgetList UIWidget::recursiveGetChildren()
 
 UIWidgetList UIWidget::recursiveGetChildrenByPos(const Point& childPos)
 {
-    if (!containsPaddingPoint(childPos))
-        return {};
-
     UIWidgetList children;
+    if (isClipping() && !containsPaddingPoint(childPos))
+        return children;
+
     for (auto& child : std::ranges::reverse_view(m_children)) {
-        if (child->isExplicitlyVisible() && child->containsPoint(childPos)) {
+        if (child->isExplicitlyVisible()) {
             if (const UIWidgetList& subChildren = child->recursiveGetChildrenByPos(childPos); !subChildren.empty())
                 children.insert(children.end(), subChildren.begin(), subChildren.end());
 
-            children.emplace_back(child);
+            if (child->containsPoint(childPos))
+                children.emplace_back(child);
         }
     }
 
@@ -1463,15 +1549,16 @@ UIWidgetList UIWidget::recursiveGetChildrenByPos(const Point& childPos)
 UIWidgetList UIWidget::recursiveGetChildrenByMarginPos(const Point& childPos)
 {
     UIWidgetList children;
-    if (!containsPaddingPoint(childPos))
+    if (isClipping() && !containsPaddingPoint(childPos))
         return children;
 
     for (auto& child : std::ranges::reverse_view(m_children)) {
-        if (child->isExplicitlyVisible() && child->containsMarginPoint(childPos)) {
+        if (child->isExplicitlyVisible()) {
             UIWidgetList subChildren = child->recursiveGetChildrenByMarginPos(childPos);
             if (!subChildren.empty())
                 children.insert(children.end(), subChildren.begin(), subChildren.end());
-            children.emplace_back(child);
+            if (child->containsMarginPoint(childPos))
+                children.emplace_back(child);
         }
     }
     return children;
@@ -1564,7 +1651,7 @@ bool UIWidget::hasState(const Fw::WidgetState state)
     return (m_states & state);
 }
 
-void UIWidget::updateState(const Fw::WidgetState state)
+void UIWidget::updateState(const Fw::WidgetState state, bool newState)
 {
     if (isDestroyed())
         return;
@@ -1579,8 +1666,8 @@ void UIWidget::updateState(const Fw::WidgetState state)
         case Fw::LastState: { newStatus = isLastChild(); break; }
         case Fw::AlternateState: { newStatus = (getParent() && (getParent()->getChildIndex(static_self_cast<UIWidget>()) % 2) == 1); break; }
         case Fw::FocusState: { newStatus = (getParent() && getParent()->getFocusedChild() == static_self_cast<UIWidget>()); break; }
-        case Fw::HoverState: { newStatus = (g_ui.getHoveredWidget() == static_self_cast<UIWidget>() && isEnabled()); break; }
-        case Fw::PressedState: { newStatus = (g_ui.getPressedWidget() == static_self_cast<UIWidget>()); break; }
+        case Fw::HoverState: { newStatus = isOnHtml() ? newState : (g_ui.getHoveredWidget() == static_self_cast<UIWidget>() && isEnabled()); break; }
+        case Fw::PressedState: { newStatus = isOnHtml() ? newState : (g_ui.getPressedWidget() == static_self_cast<UIWidget>()); break; }
         case Fw::DraggingState: { newStatus = (g_ui.getDraggingWidget() == static_self_cast<UIWidget>()); break; }
         case Fw::ActiveState:
         {
@@ -1797,6 +1884,11 @@ void UIWidget::onHoverChange(const bool hovered)
     callLuaField("onHoverChange", hovered);
 }
 
+void UIWidget::onTextHoverChange(const std::string& text, bool hovered)
+{
+    callLuaField("onTextHoverChange", text, hovered);
+}
+
 void UIWidget::onVisibilityChange(const bool visible)
 {
     if (!isAnchored())
@@ -1876,6 +1968,12 @@ bool UIWidget::onMouseWheel(const Point& mousePos, const Fw::MouseWheelDirection
 
 bool UIWidget::onClick(const Point& mousePos)
 {
+    if (hasEventListener(EVENT_TEXT_CLICK)) {
+        std::string clickedText = getTextByPos(mousePos);
+        if (!clickedText.empty()) {
+            callLuaField("onTextClick", clickedText, mousePos);
+        }
+    }
     return callLuaField<bool>("onClick", mousePos);
 }
 
@@ -1884,6 +1982,9 @@ bool UIWidget::onDoubleClick(const Point& mousePos)
     return callLuaField<bool>("onDoubleClick", mousePos);
 }
 
+int UIWidget::getImageTextureWidth() { return m_imageTexture ? m_imageTexture->getWidth() : 0; }
+int UIWidget::getImageTextureHeight() { return m_imageTexture ? m_imageTexture->getHeight() : 0; }
+std::string UIWidget::getStyleName() { return m_style->tag(); }
 UIWidgetPtr UIWidget::getHoveredChild()
 {
     const auto& hovered = g_ui.getHoveredWidget();
@@ -1980,24 +2081,28 @@ bool UIWidget::propagateOnKeyUp(const uint8_t keyCode, const int keyboardModifie
     return onKeyUp(keyCode, keyboardModifiers);
 }
 
-bool UIWidget::propagateOnMouseEvent(const Point& mousePos, UIWidgetList& widgetList)
+bool UIWidget::propagateOnMouseEvent(const Point& mousePos, UIWidgetList& widgetList, bool checkContainsPoint)
 {
+    if (isClipping() && !containsPaddingPoint(mousePos))
+        return false;
+
     bool ret = false;
-    if (containsPaddingPoint(mousePos)) {
-        for (auto& child : std::ranges::reverse_view(m_children)) {
-            if (child->isExplicitlyEnabled() && child->isExplicitlyVisible() && child->containsPoint(mousePos)) {
-                if (child->propagateOnMouseEvent(mousePos, widgetList)) {
-                    ret = true;
-                    break;
-                }
+    for (auto& child : std::ranges::reverse_view(m_children)) {
+        if (child->isExplicitlyEnabled() && child->isExplicitlyVisible()) {
+            if (child->propagateOnMouseEvent(mousePos, widgetList, true)) {
+                ret = true;
+                break;
             }
         }
     }
 
-    widgetList.emplace_back(static_self_cast<UIWidget>());
+    if (!checkContainsPoint || containsPoint(mousePos)) {
+        widgetList.emplace_back(static_self_cast<UIWidget>());
 
-    if (!isPhantom())
-        ret = true;
+        if (!isPhantom() && !isOnHtml() || isDraggable())
+            ret = true;
+    }
+
     return ret;
 }
 
@@ -2051,12 +2156,12 @@ void UIWidget::disableUpdateTemporarily() {
 
     setProp(PropDisableUpdateTemporarily, true);
     m_layout->disableUpdates();
-    g_dispatcher.deferEvent([self = static_self_cast<UIWidget>()] {
-        if (self->m_layout) {
-            self->m_layout->enableUpdates();
-            self->m_layout->update();
+    g_dispatcher.deferEvent([this, self = static_self_cast<UIWidget>()] {
+        if (m_layout) {
+            m_layout->enableUpdates();
+            updateLayout();
         }
-        self->setProp(PropDisableUpdateTemporarily, false);
+        setProp(PropDisableUpdateTemporarily, false);
     });
 }
 void UIWidget::addOnDestroyCallback(const std::string& id, const std::function<void()>&& callback)
@@ -2072,4 +2177,357 @@ void UIWidget::removeOnDestroyCallback(const std::string& id)
     const auto it = m_onDestroyCallbacks.find(id);
     if (it != m_onDestroyCallbacks.end())
         m_onDestroyCallbacks.erase(it);
+}
+
+std::vector<UIWidgetPtr> UIWidget::querySelectorAll(const std::string& selector) {
+    std::vector<UIWidgetPtr> list;
+    if (!m_htmlNode)
+        return list;
+
+    const auto& nodeList = m_htmlNode->querySelectorAll(selector);
+    list.reserve(nodeList.size());
+    for (const auto& node : nodeList) {
+        if (const auto& widget = node->getWidget())
+            list.emplace_back(widget);
+    }
+
+    return list;
+}
+
+UIWidgetPtr UIWidget::querySelector(const std::string& selector) {
+    const auto& node = m_htmlNode->querySelector(selector);
+    if (node) {
+        if (const auto& widget = node->getWidget())
+            return widget;
+    }
+    return nullptr;
+}
+
+UIWidgetPtr UIWidget::insert(int32_t index, const std::string& html) {
+    if (!isOnHtml()) return nullptr;
+    m_insertChildIndex = index;
+    return g_html.createWidgetFromHTML(html, static_self_cast<UIWidget>(), m_htmlRootId);
+}
+
+UIWidgetPtr UIWidget::append(const std::string& html) {
+    if (!isOnHtml()) return nullptr;
+    return g_html.createWidgetFromHTML(html, static_self_cast<UIWidget>(), m_htmlRootId);
+}
+
+UIWidgetPtr UIWidget::prepend(const std::string& html) {
+    return insert(1, html);
+}
+
+UIWidgetPtr UIWidget::html(const std::string& html) {
+    destroyChildren();
+    return append(html);
+}
+
+size_t UIWidget::remove(const std::string& queryString) {
+    if (!isOnHtml()) return 0;
+
+    const auto& nodes = querySelectorAll(queryString);
+    for (const auto& node : nodes) {
+        node->destroy();
+    }
+
+    return nodes.size();
+}
+
+const UIWidgetStyle& UIWidget::style() const
+{
+    m_styleCache.display = m_displayType;
+    m_styleCache.position = m_positionType;
+    m_styleCache.flexDirection = m_flexContainer.direction;
+    m_styleCache.flexWrap = m_flexContainer.wrap;
+    m_styleCache.justifyContent = m_flexContainer.justify;
+    m_styleCache.alignItems = m_flexContainer.alignItems;
+    m_styleCache.alignContent = m_flexContainer.alignContent;
+    m_styleCache.rowGap = m_flexContainer.rowGap;
+    m_styleCache.columnGap = m_flexContainer.columnGap;
+    m_styleCache.order = m_flexItem.order;
+    m_styleCache.flexGrow = m_flexItem.flexGrow;
+    m_styleCache.flexShrink = m_flexItem.flexShrink;
+    m_styleCache.flexBasis = m_flexItem.basis;
+    m_styleCache.alignSelf = m_flexItem.alignSelf;
+    m_styleCache.width = m_width;
+    m_styleCache.height = m_height;
+    m_styleCache.minWidth = m_minSize.width();
+    m_styleCache.minHeight = m_minSize.height();
+    m_styleCache.maxWidth = m_maxSize.width();
+    m_styleCache.maxHeight = m_maxSize.height();
+    m_styleCache.marginLeftAuto = m_marginLeftAuto;
+    m_styleCache.marginRightAuto = m_marginRightAuto;
+    return m_styleCache;
+}
+
+void UIWidget::setFlexDirection(FlexDirection direction)
+{
+    if (m_flexContainer.direction == direction)
+        return;
+    m_flexContainer.direction = direction;
+    updateLayout();
+}
+
+void UIWidget::setFlexWrap(FlexWrap wrap)
+{
+    if (m_flexContainer.wrap == wrap)
+        return;
+    m_flexContainer.wrap = wrap;
+    updateLayout();
+}
+
+void UIWidget::setJustifyContent(JustifyContent justify)
+{
+    if (m_flexContainer.justify == justify)
+        return;
+    m_flexContainer.justify = justify;
+    updateLayout();
+}
+
+void UIWidget::setAlignItems(AlignItems align)
+{
+    if (m_flexContainer.alignItems == align)
+        return;
+    m_flexContainer.alignItems = align;
+    updateLayout();
+}
+
+void UIWidget::setAlignContent(AlignContent align)
+{
+    if (m_flexContainer.alignContent == align)
+        return;
+    m_flexContainer.alignContent = align;
+    updateLayout();
+}
+
+void UIWidget::setRowGap(int gap)
+{
+    gap = std::max(0, gap);
+    if (m_flexContainer.rowGap == gap)
+        return;
+    m_flexContainer.rowGap = gap;
+    updateLayout();
+}
+
+void UIWidget::setColumnGap(int gap)
+{
+    gap = std::max(0, gap);
+    if (m_flexContainer.columnGap == gap)
+        return;
+    m_flexContainer.columnGap = gap;
+    updateLayout();
+}
+
+void UIWidget::setGap(int rowGap, int columnGap)
+{
+    rowGap = std::max(0, rowGap);
+    columnGap = std::max(0, columnGap);
+    bool changed = false;
+    if (m_flexContainer.rowGap != rowGap) {
+        m_flexContainer.rowGap = rowGap;
+        changed = true;
+    }
+    if (m_flexContainer.columnGap != columnGap) {
+        m_flexContainer.columnGap = columnGap;
+        changed = true;
+    }
+    if (changed)
+        updateLayout();
+}
+
+void UIWidget::setFlexOrder(int order)
+{
+    if (m_flexItem.order == order)
+        return;
+    m_flexItem.order = order;
+    updateParentLayout();
+}
+
+void UIWidget::setFlexGrow(float grow)
+{
+    grow = std::max(0.f, grow);
+    if (std::abs(m_flexItem.flexGrow - grow) < 1e-6f)
+        return;
+    m_flexItem.flexGrow = grow;
+    updateParentLayout();
+}
+
+void UIWidget::setFlexShrink(float shrink)
+{
+    shrink = std::max(0.f, shrink);
+    if (std::abs(m_flexItem.flexShrink - shrink) < 1e-6f)
+        return;
+    m_flexItem.flexShrink = shrink;
+    updateParentLayout();
+}
+
+void UIWidget::setFlexBasis(const FlexBasis& basis)
+{
+    if (m_flexItem.basis.type == basis.type && std::abs(m_flexItem.basis.value - basis.value) < 1e-6f)
+        return;
+    m_flexItem.basis = basis;
+    updateParentLayout();
+}
+
+void UIWidget::setAlignSelf(AlignSelf align)
+{
+    if (m_flexItem.alignSelf == align)
+        return;
+    m_flexItem.alignSelf = align;
+    updateParentLayout();
+}
+
+void UIWidget::setPlacement(const std::string& placement) {
+    m_placement = Fw::translatePlacement(placement);
+    scheduleHtmlTask(PropApplyAnchorAlignment);
+}
+
+std::string UIWidget::getTextByPos(const Point& mousePos)
+{
+    for (const auto& pair : m_rectToWord) {
+        if (pair.first.contains(mousePos))
+            return pair.second;
+    }
+
+    return "";
+}
+
+void UIWidget::setEventListener(WidgetEvents event)
+{
+    if (hasEventListener(event))
+        return;
+
+    m_events |= event;
+
+    if ((event == EVENT_TEXT_CLICK || event == EVENT_TEXT_HOVER) && m_rectToWord.empty())
+        cacheRectToWord();
+}
+
+void UIWidget::removeEventListener(WidgetEvents event)
+{
+    if (!hasEventListener(event))
+        return;
+
+    m_events &= ~event;
+
+    if (event == EVENT_TEXT_CLICK || event == EVENT_TEXT_HOVER) {
+        m_rectToWord.clear();
+        m_rectToWord.shrink_to_fit();
+        m_textUnderline = std::make_shared<CoordsBuffer>();
+    }
+}
+
+void UIWidget::cacheRectToWord()
+{
+    if (m_rect.isEmpty())
+        return;
+
+    const auto& text = m_drawText;
+    const int textLength = text.length();
+
+    // map glyphs positions
+    Size textBoxSize;
+    m_font->calculateGlyphsPositions(text, m_textAlign, m_glyphsPositionsCache, &textBoxSize);
+    if (m_glyphsCoordsCache.size() != static_cast<size_t>(textLength))
+        m_glyphsCoordsCache.resize(textLength);
+
+    auto& glyphsCoords = m_glyphsCoordsCache;
+    const auto& glyphsPositions = m_glyphsPositionsCache;
+    const Rect* glyphsTextureCoords = m_font->getGlyphsTextureCoords();
+    const Size* glyphsSize = m_font->getGlyphsSize();
+    int glyph;
+
+    // update rect size
+    if (!m_rect.isValid() || hasProp(PropTextHorizontalAutoResize) || hasProp(PropTextVerticalAutoResize)) {
+        textBoxSize += Size(m_padding.left + m_padding.right, m_padding.top + m_padding.bottom) + m_textOffset.toSize();
+        Size size = getSize();
+        if (size.width() <= 0 || (hasProp(PropTextHorizontalAutoResize) && !hasProp(PropTextWrap)))
+            size.setWidth(textBoxSize.width());
+        if (size.height() <= 0 || hasProp(PropTextVerticalAutoResize))
+            size.setHeight(textBoxSize.height());
+        setSize(size);
+    }
+
+    Rect textScreenCoords = m_rect;
+    textScreenCoords.expandLeft(-m_padding.left);
+    textScreenCoords.expandRight(-m_padding.right);
+    textScreenCoords.expandBottom(-m_padding.bottom);
+    textScreenCoords.expandTop(-m_padding.top);
+
+    for (int i = 0; i < textLength; ++i) {
+        glyph = (uchar)text[i];
+        glyphsCoords[i].clear();
+
+        // skip invalid glyphs
+        if (glyph < 32)
+            continue;
+
+        // calculate initial glyph rect and texture coords
+        Rect glyphScreenCoords(glyphsPositions[i], glyphsSize[glyph]);
+        Rect glyphTextureCoords = glyphsTextureCoords[glyph];
+
+        // first translate to align position
+        if (m_textAlign & Fw::AlignBottom) {
+            glyphScreenCoords.translate(0, textScreenCoords.height() - textBoxSize.height());
+        } else if (m_textAlign & Fw::AlignVerticalCenter) {
+            glyphScreenCoords.translate(0, (textScreenCoords.height() - textBoxSize.height()) / 2);
+        } else { // AlignTop
+            // nothing to do
+        }
+
+        if (m_textAlign & Fw::AlignRight) {
+            glyphScreenCoords.translate(textScreenCoords.width() - textBoxSize.width(), 0);
+        } else if (m_textAlign & Fw::AlignHorizontalCenter) {
+            glyphScreenCoords.translate((textScreenCoords.width() - textBoxSize.width()) / 2, 0);
+        } else { // AlignLeft
+            // nothing to do
+        }
+
+        // translate rect to screen coords
+        glyphScreenCoords.translate(textScreenCoords.topLeft());
+
+        // only render if glyph rect is visible on screenCoords
+        if (!textScreenCoords.intersects(glyphScreenCoords))
+            continue;
+
+        // bound glyph bottomRight to screenCoords bottomRight
+        if (glyphScreenCoords.bottom() > textScreenCoords.bottom()) {
+            glyphTextureCoords.setBottom(glyphTextureCoords.bottom() + (textScreenCoords.bottom() - glyphScreenCoords.bottom()));
+            glyphScreenCoords.setBottom(textScreenCoords.bottom());
+        }
+        if (glyphScreenCoords.right() > textScreenCoords.right()) {
+            glyphTextureCoords.setRight(glyphTextureCoords.right() + (textScreenCoords.right() - glyphScreenCoords.right()));
+            glyphScreenCoords.setRight(textScreenCoords.right());
+        }
+
+        // render glyph
+        glyphsCoords[i] = glyphScreenCoords;
+    }
+
+    updateRectToWord(glyphsCoords);
+}
+
+void UIWidget::setColor(const Color& color)
+{
+    if (m_color == color)
+        return;
+
+    if (!m_textColors.empty()) {
+        for (auto& pair : m_textColors) {
+            if (pair.second == m_baseTextColor)
+                pair.second = color;
+        }
+        for (auto& pair : m_drawTextColors) {
+            if (pair.second == m_baseTextColor)
+                pair.second = color;
+        }
+        m_baseTextColor = color;
+        m_colorCoordsBuffer.clear();
+        m_coordsBuffer->clear();
+        m_textCachedScreenCoords = {};
+    }
+
+    m_color = color;
+    repaint();
 }

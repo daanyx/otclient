@@ -13,6 +13,20 @@ CreatureTypeSummonOwn = 3
 CreatureTypeSummonOther = 4
 CreatureTypeHidden = 5
 
+VocationsServer = {
+    None = 0,
+    Sorcerer = 1,
+    Druid = 2,
+    Paladin = 3,
+    Knight = 4,
+    MasterSorcerer = 5,
+    ElderDruid = 6,
+    RoyalPaladin = 7,
+    EliteKnight = 8,
+    Monk = 9,
+    ExaltedMonk = 10,
+}
+
 VocationsClient = {
     None = 0,
     Knight = 1,
@@ -26,7 +40,6 @@ VocationsClient = {
     MasterSorcerer = 13,
     ElderDruid = 14,
     ExaltedMonk = 15,
-
 }
 -- @}
 
@@ -135,6 +148,16 @@ function Creature:onIconsChange(icon, category, count)
     if imagePath then
         local clipX = (icon - 1) * 11
         self:setIconsTexture(imagePath, torect(clipX .. ' 0 11 11'), count)
+    end
+    -- Apply fiendish text shader only to monsters and only when the icon matches
+    if type(self.isMonster) ~= 'function' or not self:isMonster() then
+        return
+    end
+    if category == 1 and icon == 5 then
+        self:setNameShader('Text - Gold Outline')
+    elseif self.getNameShader and self:getNameShader() == 'Text - Gold Outline' then
+        -- Reset only if we previously applied the fiendish shader
+        self:setNameShader('Text - Default')
     end
 end
 

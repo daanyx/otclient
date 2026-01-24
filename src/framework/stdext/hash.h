@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,10 @@
 
 #pragma once
 
-#include <parallel_hashmap/phmap.h>
-
 namespace stdext
 {
     // Robin Hood lib
-    constexpr size_t hash_int(uint64_t x) noexcept
+    constexpr size_t hash_int(size_t x) noexcept
     {
         x ^= x >> 33U;
         x *= UINT64_C(0xff51afd7ed558ccd);

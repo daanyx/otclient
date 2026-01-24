@@ -26,6 +26,39 @@ local function onError(protocol, message, errorCode)
     })
 end
 
+local function onTokenRequired(protocol)
+    if loadBox then
+        loadBox:destroy()
+        loadBox = nil
+    end
+
+    local function promptForToken()
+        displayInputBox(
+            tr('Authenticator Required'),
+            tr('Please enter your authenticator token:'),
+            function(text)
+                local token = text and text:trim() or ''
+                G.authenticatorToken = token
+
+                local tokenEdit = enterGame and enterGame:getChildById('authenticatorTokenTextEdit')
+                if tokenEdit then
+                    tokenEdit:setText(token)
+                end
+
+                EnterGame.doLogin()
+            end,
+            function()
+                G.authenticatorToken = ''
+                EnterGame.show()
+            end,
+            G.authenticatorToken or '',
+            8
+        )
+    end
+
+    promptForToken()
+end
+
 local function onMotd(protocol, motd)
     G.motdNumber = tonumber(motd:sub(0, motd:find('\n')))
     G.motdMessage = motd:sub(motd:find('\n') + 1, #motd)
@@ -310,10 +343,12 @@ end
 
 function EnterGame.postCacheInfo()
     local requestType = 'cacheinfo'
+
     local onRecvInfo = function(message, err)
+        -- Guard: if UI is destroyed, do nothing
+        if not enterGame then return end
 
         if err then
-            -- onError(nil, 'Bad Request. Game_entergame postCacheInfo1 ', 400)
             reportRequestWarning(requestType, "Bad Request. Game_entergame postCacheInfo1")
             return
         end
@@ -335,13 +370,15 @@ function EnterGame.postCacheInfo()
             return
         end
 
+        -- Guard: check modules.client_topmenu still exists
+        if not modules or not modules.client_topmenu then return end
+
         modules.client_topmenu.setPlayersOnline(response.playersonline)
         modules.client_topmenu.setDiscordStreams(response.discord_online)
         modules.client_topmenu.setYoutubeStreams(response.gamingyoutubestreams)
         modules.client_topmenu.setYoutubeViewers(response.gamingyoutubeviewer)
         modules.client_topmenu.setLinkYoutube(response.youtube_link)
         modules.client_topmenu.setLinkDiscord(response.discord_link)
-
     end
 
     HTTP.post(Services.status, json.encode({
@@ -457,6 +494,12 @@ function EnterGame.show()
     if loadBox then
         return
     end
+
+    local tokenEdit = enterGame and enterGame:getChildById('authenticatorTokenTextEdit')
+    if tokenEdit then
+        tokenEdit:setText('')
+    end
+    G.authenticatorToken = ''
 
     enterGame:show()
     enterGame:raise()
@@ -629,7 +672,17 @@ function EnterGame.tryHttpLogin(clientVersion, httpLogin)
     G.requestId = math.random(1)
 
     local http = LoginHttp.create()
-    http:httpLogin(host, path, G.port, G.account, G.password, G.requestId, httpLogin)
+        http:httpLogin(host, path, G.port, G.account, G.password, G.authenticatorToken or '', G.requestId, httpLogin)
+        connect(loadBox, {
+            onCancel = function(msgbox)
+                loadBox = nil
+                G.requestId = 0
+                if http and http.cancel then
+                    http:cancel()
+                end
+                EnterGame.show()
+            end
+        })
 end
 
 function printTable(t)
@@ -702,17 +755,34 @@ function EnterGame.loginFailed(requestId, msg, result)
     if G.requestId ~= requestId then
         return
     end
+
+    local shouldRequestToken = false
+
+    if msg then
+        local lowerMsg = msg:lower()
+        if lowerMsg:find('two%-factor') then
+            shouldRequestToken = true
+        end
+    end
+
+    if shouldRequestToken then
+        G.authenticatorToken = ''
+        onTokenRequired(nil)
+    else
     onError(nil, msg, result)
+    end
 end
 
 function EnterGame.doLogin()
     G.account = enterGame:getChildById('accountNameTextEdit'):getText()
     G.password = enterGame:getChildById('accountPasswordTextEdit'):getText()
-    G.authenticatorToken = enterGame:getChildById('authenticatorTokenTextEdit'):getText()
+    local initialToken = enterGame:getChildById('authenticatorTokenTextEdit'):getText()
+    G.authenticatorToken = initialToken and initialToken:trim() or ''
     G.stayLogged = enterGame:getChildById('stayLoggedBox'):isChecked()
     G.host = enterGame:getChildById('serverHostTextEdit'):getText()
     G.port = tonumber(enterGame:getChildById('serverPortTextEdit'):getText())
     local clientVersion = tonumber(clientBox:getText())
+    G.clientVersion = clientVersion
     local httpLogin = enterGame:getChildById('httpLoginBox'):isChecked()
     EnterGame.hide()
 
@@ -737,6 +807,7 @@ function EnterGame.doLogin()
         protocolLogin.onSessionKey = onSessionKey
         protocolLogin.onCharacterList = onCharacterList
         protocolLogin.onUpdateNeeded = onUpdateNeeded
+        protocolLogin.onTokenRequired = onTokenRequired
 
         loadBox = displayCancelBox(tr('Please wait'), tr('Connecting to login server...'))
         connect(loadBox, {

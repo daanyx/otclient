@@ -25,6 +25,7 @@
 #include "x11window.h"
 #include <framework/core/resourcemanager.h>
 #include <framework/core/eventdispatcher.h>
+#include <framework/util/stats.h>
 #include <framework/graphics/image.h>
 #include <unistd.h>
 
@@ -225,9 +226,9 @@ void X11Window::init()
 
 void X11Window::terminate()
 {
-    if (m_cursor != None) {
+    if (m_cursor != X11None) {
         XUndefineCursor(m_display, m_window);
-        m_cursor = None;
+        m_cursor = X11None;
     }
 
     if (m_hiddenCursor) {
@@ -424,7 +425,7 @@ void X11Window::internalChooseGLVisual()
         GLX_GREEN_SIZE, 8,
         GLX_BLUE_SIZE, 8,
         GLX_ALPHA_SIZE, 8,
-        None
+        X11None
     };
 
     int nelements;
@@ -483,7 +484,7 @@ void X11Window::internalDestroyGLContext()
     }
 #else
     if (m_glxContext) {
-        glXMakeCurrent(m_display, None, nullptr);
+        glXMakeCurrent(m_display, X11None, nullptr);
         glXDestroyContext(m_display, m_glxContext);
         m_glxContext = nullptr;
     }
@@ -599,6 +600,7 @@ void X11Window::maximize()
 
 void X11Window::poll()
 {
+    AutoStat s(STATS_RENDER, "PollWindow");
     bool needsResizeUpdate = false;
 
     XEvent event, peekEvent;
@@ -876,10 +878,10 @@ void X11Window::showMouse()
 void X11Window::hideMouse()
 {
     g_mainDispatcher.addEvent([&] {
-        if (m_cursor != None)
+        if (m_cursor != X11None)
             restoreMouseCursor();
 
-        if (m_hiddenCursor == None) {
+        if (m_hiddenCursor == X11None) {
             char bm[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
             Pixmap pix = XCreateBitmapFromData(m_display, m_window, bm, 8, 8);
             XColor black;
@@ -900,7 +902,7 @@ void X11Window::setMouseCursor(int cursorId)
         if (cursorId >= (int)m_cursors.size() || cursorId < 0)
             return;
 
-        if (m_cursor != None)
+        if (m_cursor != X11None)
             restoreMouseCursor();
 
         m_cursor = m_cursors[cursorId];
@@ -912,7 +914,7 @@ void X11Window::restoreMouseCursor()
 {
     g_mainDispatcher.addEvent([&] {
         XUndefineCursor(m_display, m_window);
-        m_cursor = None;
+        m_cursor = X11None;
         });
 }
 
@@ -1074,7 +1076,7 @@ std::string X11Window::getClipboardText()
         return m_clipboardText;
 
     std::string clipboardText;
-    if (ownerWindow != None) {
+    if (ownerWindow != X11None) {
         XConvertSelection(m_display, clipboard, XA_STRING, XA_PRIMARY, ownerWindow, CurrentTime);
         XFlush(m_display);
 

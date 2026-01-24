@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,15 @@
  */
 
 #include "texturemanager.h"
-#include "animatedtexture.h"
-#include "graphics.h"
-#include "image.h"
 
-#include <framework/core/clock.h>
-#include <framework/core/eventdispatcher.h>
-#include <framework/core/resourcemanager.h>
-#include <framework/graphics/apngloader.h>
-#include <framework/graphics/drawpool.h>
+#include "animatedtexture.h"
+#include "apngloader.h"
+#include "drawpool.h"
+#include "image.h"
+#include "texture.h"
+#include "framework/core/clock.h"
+#include "framework/core/eventdispatcher.h"
+#include "framework/core/resourcemanager.h"
 
 #ifdef FRAMEWORK_NET
 #include <framework/net/protocolhttp.h>
@@ -47,6 +47,7 @@ void TextureManager::terminate()
     }
     m_textures.clear();
     m_animatedTextures.clear();
+    m_matrixCache.objects.clear();
     m_emptyTexture = nullptr;
 }
 
@@ -132,8 +133,7 @@ TexturePtr TextureManager::getTexture(const std::string& fileName, const bool sm
             g_resources.readFileStream(filePathEx, fin);
             texture = loadTexture(fin);
         } catch (const stdext::exception& e) {
-            g_logger.error("Unable to load texture '{}': {}", fileName, e.what());
-            texture = g_textures.getEmptyTexture();
+            g_logger.error("Unable to load texture '{}': {}", fileName, e.what());;
         }
 
         if (texture) {

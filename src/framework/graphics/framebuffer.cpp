@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,12 @@
  */
 
 #include "framebuffer.h"
+
 #include "graphics.h"
-#include "texture.h"
-
-#include <framework/core/application.h>
-#include <framework/core/asyncdispatcher.h>
-#include <framework/core/eventdispatcher.h>
-#include <framework/graphics/image.h>
-
+#include "image.h"
+#include "painter.h"
+#include "framework/core/asyncdispatcher.h"
+#include "framework/core/eventdispatcher.h"
 #include "framework/core/graphicalapplication.h"
 
 uint32_t FrameBuffer::boundFbo = 0;

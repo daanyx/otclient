@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,11 @@
  */
 
 #include "gameconfig.h"
-#include <framework/core/resourcemanager.h>
-#include <framework/graphics/fontmanager.h>
-#include <framework/otml/otml.h>
+
+#include "framework/core/resourcemanager.h"
+#include "framework/graphics/fontmanager.h"
+#include "framework/otml/otmldocument.h"
+#include "framework/otml/otmlnode.h"
 
 GameConfig g_gameConfig;
 
@@ -138,6 +140,8 @@ void GameConfig::loadCreatureNode(const OTMLNodePtr& mainNode) {
             m_volatileSquareDuration = node->value<int>();
         else if (node->tag() == "adjust-creature-information-based-crop-size")
             m_adjustCreatureInformationBasedCropSize = node->value<bool>();
+        else if (node->tag() == "use-crop-size-for-ui-draw")
+            m_useCropSizeForUIDraw = node->value<bool>();
         else if (node->tag() == "diagonal-walk-speed")
             m_creatureDiagonalWalkSpeed = node->value<double>();
         else if (node->tag() == "draw-information-by-widget-beta")

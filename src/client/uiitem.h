@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@
 #pragma once
 
 #include "declarations.h"
-#include "item.h"
 #include <framework/ui/uiwidget.h>
 
 class UIItem final : public UIWidget
@@ -41,10 +40,10 @@ public:
     void setVirtual(const bool virt) { m_virtual = virt; }
     void clearItem() { setItemId(0); }
 
-    int getItemId() { return m_item ? m_item->getId() : 0; }
-    int getItemCount() { return m_item ? m_item->getCount() : 0; }
-    int getItemSubType() { return m_item ? m_item->getSubType() : 0; }
-    int getItemCountOrSubType() { return m_item ? m_item->getCountOrSubType() : 0; }
+    int getItemId();
+    int getItemCount();
+    int getItemSubType();
+    int getItemCountOrSubType();
     ItemPtr getItem() { return m_item; }
     bool isVirtual() { return m_virtual; }
     bool isItemVisible() { return m_itemVisible; }
@@ -57,8 +56,9 @@ protected:
 
     std::string m_shaderName;
     ItemPtr m_item;
+    uint32_t m_itemId{ 0 };
     bool m_virtual{ false };
     bool m_showId{ false };
     bool m_itemVisible{ true };
-    bool m_alwaysShowCount{ false };
+    bool m_alwaysShowCount{ true };
 };

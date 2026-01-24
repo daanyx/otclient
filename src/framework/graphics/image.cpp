@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,9 @@
 
 #include "image.h"
 
-#include <framework/core/filestream.h>
-#include <framework/core/resourcemanager.h>
-#include <framework/graphics/apngloader.h>
-
-#include "framework/stdext/qrcodegen.h"
+#include "apngloader.h"
+#include "framework/core/filestream.h"
+#include "framework/core/resourcemanager.h"
 
 using namespace qrcodegen;
 

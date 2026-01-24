@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,29 +21,26 @@
  */
 
 #include "soundmanager.h"
-#include "soundbuffer.h"
-#include "soundeffect.h"
-#include "soundchannel.h"
-#include "soundfile.h"
-#include "streamsoundsource.h"
-#include "combinedsoundsource.h"
-
-#include <cstdint>
-#include <framework/core/asyncdispatcher.h>
-#include <framework/core/clock.h>
-#include <framework/core/resourcemanager.h>
-#include <framework/core/garbagecollection.h>
 #include <nlohmann/json.hpp>
 #include <sounds.pb.h>
+
+#include "soundbuffer.h"
+#include "soundchannel.h"
+#include "soundeffect.h"
+#include "soundfile.h"
+#include "soundsource.h"
+#include "streamsoundsource.h"
+#include "combinedsoundsource.h"
+#include "client/game.h"
+#include "framework/core/asyncdispatcher.h"
+#include "framework/core/clock.h"
+#include "framework/core/garbagecollection.h"
+#include "framework/core/resourcemanager.h"
+#include "framework/util/stats.h"
 
 using namespace otclient::protobuf;
 
 using json = nlohmann::json;
-
-class StreamSoundSource;
-class CombinedSoundSource;
-class SoundFile;
-class SoundBuffer;
 
 SoundManager g_sounds;
 
@@ -102,6 +99,7 @@ void SoundManager::terminate()
 
 void SoundManager::poll()
 {
+    AutoStat s(STATS_MAIN, "PollSounds");
     static ticks_t lastUpdate = 0;
     static uint_fast8_t soundsErased = 0;
 

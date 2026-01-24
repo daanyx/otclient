@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +20,8 @@
  * THE SOFTWARE.
  */
 
-#include "otmlparser.h"
 #include "otmldocument.h"
-#include "otmlexception.h"
+#include "otmlparser.h"
 
 OTMLParser::OTMLParser(const OTMLDocumentPtr& doc, std::istream& in) :
     currentDepth(0), currentLine(0),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -77,10 +77,13 @@ namespace Proto
         GameServerCreatureShader = 54,
         GameServerMapShader = 55,
         GameServerCreatureTyping = 56,
+        GameServerAttachedPaperdoll = 60,
+        GameServerDetachPaperdoll = 61,
         GameServerFeatures = 67,
         GameServerFloorDescription = 75,
 
         // original tibia ONLY
+        GameServerWeaponProficiencyExperience = 92,
         GameServerImbuementDurations = 93,
         GameServerPassiveCooldown = 94,
         GameServerBosstiaryData = 97,
@@ -172,7 +175,9 @@ namespace Proto
         GameServerFloorChangeUp = 190,
         GameServerFloorChangeDown = 191,
         GameServerLootContainers = 192,
+        GameServerMonkData = 193,
         GameServerCyclopediaHouseAuctionMessage = 195,
+        GameServerWeaponProficiencyInfo = 196,
         GameServerCyclopediaHousesInfo = 198,
         GameServerCyclopediaHouseList = 199,
         GameServerChooseOutfit = 200,
@@ -237,6 +242,7 @@ namespace Proto
         ClientPingBack = 30,
         ClientUseStash = 40,
         ClientBestiaryTrackerStatus = 42,
+        ClientPartyAnalyzerAction = 43,
 
         // all in game opcodes must be equal or greater than 50
         ClientFirstGameOpcode = 50,

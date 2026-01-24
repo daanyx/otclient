@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,14 @@
  */
 
 #include "filestream.h"
-#include "binarytree.h"
-#include "graphicalapplication.h"
-#include <framework/core/application.h>
 
 #include <physfs.h>
+
+#include "binarytree.h"
+#include "graphicalapplication.h"
+#if ENABLE_ENCRYPTION == 1
+#include "resourcemanager.h"
+#endif
 
 inline void grow(std::vector<uint8_t>& data, const size_t size) {
     if (size > data.size())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -85,6 +85,18 @@ public:
     }
 
     bool eof() { return (m_readPos - m_headerPos) >= m_messageSize; }
+
+    std::vector<uint8_t> peekBytes(int bytes) const
+    {
+        const int available = m_messageSize - (m_readPos - m_headerPos);
+        if (available <= 0)
+            return {};
+
+        bytes = std::min<uint8_t>(bytes, available);
+        std::vector<uint8_t> data(bytes);
+        std::memcpy(data.data(), m_buffer + m_readPos, bytes);
+        return data;
+    }
 
 protected:
     void reset();

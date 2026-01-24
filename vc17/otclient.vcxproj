@@ -166,49 +166,51 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>$(PREPROCESSOR_DEFS);_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>
-        $(VcpkgRoot)\installed\$(VcpkgTriplet)\include\luajit;
-        $(GITHUB_WORKSPACE)\vcpkg\installed\$(VcpkgTriplet)\include\;
+        $(VcpkgInstalledDir)\include\luajit;
+		$(VcpkgInstalledDir)\include\;
         generated;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <DisableSpecificWarnings>4244;4251;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CombineFilesOnlyFromTheSameFolder>true</CombineFilesOnlyFromTheSameFolder>
       <WarningLevel>Level4</WarningLevel>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <IncludeInUnityFile>true</IncludeInUnityFile>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>$(PREPROCESSOR_DEFS);_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>
-        $(VcpkgRoot)\installed\$(VcpkgTriplet)\include\luajit;
-        $(GITHUB_WORKSPACE)\vcpkg\installed\$(VcpkgTriplet)\include\;
+        $(VcpkgInstalledDir)\include\luajit;
+        $(VcpkgInstalledDir)\include\;
         generated;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <DisableSpecificWarnings>4244;4251;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CombineFilesOnlyFromTheSameFolder>true</CombineFilesOnlyFromTheSameFolder>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <IncludeInUnityFile>true</IncludeInUnityFile>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='OpenGL|Win32'">
@@ -220,13 +222,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>
-        $(VcpkgRoot)\installed\$(VcpkgTriplet)\include\luajit;
-        $(GITHUB_WORKSPACE)\vcpkg\installed\$(VcpkgTriplet)\include\;
+        $(VcpkgInstalledDir)\include\luajit;
+        $(VcpkgInstalledDir)\include\;
         generated;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4251;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CombineFilesOnlyFromTheSameFolder>true</CombineFilesOnlyFromTheSameFolder>
@@ -250,13 +252,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>
-        $(VcpkgRoot)\installed\$(VcpkgTriplet)\include\luajit;
-        $(GITHUB_WORKSPACE)\vcpkg\installed\$(VcpkgTriplet)\include\;
+        $(VcpkgInstalledDir)\include\luajit;
+        $(VcpkgInstalledDir)\include\;
         generated;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4251;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CombineFilesOnlyFromTheSameFolder>true</CombineFilesOnlyFromTheSameFolder>
@@ -281,13 +283,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>
-        $(VcpkgRoot)\installed\$(VcpkgTriplet)\include\luajit;
-        $(GITHUB_WORKSPACE)\vcpkg\installed\$(VcpkgTriplet)\include\;
+        $(VcpkgInstalledDir)\include\luajit;
+        $(VcpkgInstalledDir)\include\;
         generated;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4251;4996;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CombineFilesOnlyFromTheSameFolder>true</CombineFilesOnlyFromTheSameFolder>
@@ -310,13 +312,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>
-        $(VcpkgRoot)\installed\$(VcpkgTriplet)\include\luajit;
-        $(GITHUB_WORKSPACE)\vcpkg\installed\$(VcpkgTriplet)\include\;
+        $(VcpkgInstalledDir)\include\luajit;
+        $(VcpkgInstalledDir)\include\;
         generated;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4251;4996;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CombineFilesOnlyFromTheSameFolder>true</CombineFilesOnlyFromTheSameFolder>
@@ -332,6 +334,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\client\paperdoll.cpp" />
+    <ClCompile Include="..\src\client\paperdollmanager.cpp" />
+    <ClCompile Include="..\src\framework\pch.cpp">
+      <IncludeInUnityFile>false</IncludeInUnityFile>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\src\client\animatedtext.cpp" />
     <ClCompile Include="..\src\client\animator.cpp" />
     <ClCompile Include="..\src\client\attachableobject.cpp" />
@@ -426,6 +434,11 @@
     <ClCompile Include="..\src\framework\graphics\texture.cpp" />
     <ClCompile Include="..\src\framework\graphics\textureatlas.cpp" />
     <ClCompile Include="..\src\framework\graphics\texturemanager.cpp" />
+    <ClCompile Include="..\src\framework\html\cssparser.cpp" />
+    <ClCompile Include="..\src\framework\html\htmlmanager.cpp" />
+    <ClCompile Include="..\src\framework\html\htmlnode.cpp" />
+    <ClCompile Include="..\src\framework\html\htmlparser.cpp" />
+    <ClCompile Include="..\src\framework\html\queryselector.cpp" />
     <ClCompile Include="..\src\framework\input\mouse.cpp" />
     <ClCompile Include="..\src\framework\luaengine\luaexception.cpp" />
     <ClCompile Include="..\src\framework\luaengine\luainterface.cpp" />
@@ -477,6 +490,7 @@
     <ClCompile Include="..\src\framework\ui\uigridlayout.cpp" />
     <ClCompile Include="..\src\framework\ui\uihorizontallayout.cpp" />
     <ClCompile Include="..\src\framework\ui\uilayout.cpp" />
+    <ClCompile Include="..\src\framework\ui\uilayoutflexbox.cpp" />
     <ClCompile Include="..\src\framework\ui\uimanager.cpp" />
     <ClCompile Include="..\src\framework\ui\uiparticles.cpp" />
     <ClCompile Include="..\src\framework\ui\uiqrcode.cpp" />
@@ -485,11 +499,14 @@
     <ClCompile Include="..\src\framework\ui\uiverticallayout.cpp" />
     <ClCompile Include="..\src\framework\ui\uiwidget.cpp" />
     <ClCompile Include="..\src\framework\ui\uiwidgetbasestyle.cpp" />
+    <ClCompile Include="..\src\framework\ui\uiwidgethtml.cpp" />
     <ClCompile Include="..\src\framework\ui\uiwidgetimage.cpp" />
     <ClCompile Include="..\src\framework\ui\uiwidgettext.cpp" />
     <ClCompile Include="..\src\framework\util\color.cpp" />
     <ClCompile Include="..\src\framework\util\crypt.cpp" />
+    <ClCompile Include="..\src\framework\util\stats.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\tools\datdump.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\client\animatedtext.h" />
@@ -499,6 +516,8 @@
     <ClInclude Include="..\src\client\attachedeffectmanager.h" />
     <ClInclude Include="..\src\client\gameconfig.h" />
     <ClInclude Include="..\src\client\luavaluecasts_client.h" />
+    <ClInclude Include="..\src\client\paperdoll.h" />
+    <ClInclude Include="..\src\client\paperdollmanager.h" />
     <ClInclude Include="..\src\client\spriteappearances.h" />
     <ClInclude Include="..\src\client\client.h" />
     <ClInclude Include="..\src\client\const.h" />
@@ -568,6 +587,7 @@
     <ClInclude Include="..\src\framework\graphics\animatedtexture.h" />
     <ClInclude Include="..\src\framework\graphics\apngloader.h" />
     <ClInclude Include="..\src\framework\graphics\bitmapfont.h" />
+    <ClInclude Include="..\src\framework\graphics\bitmapfontwrapoptions.h" />
     <ClInclude Include="..\src\framework\graphics\cachedtext.h" />
     <ClInclude Include="..\src\framework\graphics\coordsbuffer.h" />
     <ClInclude Include="..\src\framework\graphics\declarations.h" />
@@ -595,6 +615,12 @@
     <ClInclude Include="..\src\framework\graphics\textureatlas.h" />
     <ClInclude Include="..\src\framework\graphics\texturemanager.h" />
     <ClInclude Include="..\src\framework\graphics\vertexarray.h" />
+    <ClInclude Include="..\src\framework\html\cssparser.h" />
+    <ClInclude Include="..\src\framework\html\declarations.h" />
+    <ClInclude Include="..\src\framework\html\htmlmanager.h" />
+    <ClInclude Include="..\src\framework\html\htmlnode.h" />
+    <ClInclude Include="..\src\framework\html\htmlparser.h" />
+    <ClInclude Include="..\src\framework\html\queryselector.h" />
     <ClInclude Include="..\src\framework\input\mouse.h" />
     <ClInclude Include="..\src\framework\luaengine\declarations.h" />
     <ClInclude Include="..\src\framework\luaengine\luabinder.h" />
@@ -640,7 +666,6 @@
     <ClInclude Include="..\src\framework\stdext\compiler.h" />
     <ClInclude Include="..\src\framework\stdext\demangle.h" />
     <ClInclude Include="..\src\framework\stdext\exception.h" />
-    <ClInclude Include="..\src\framework\stdext\format.h" />
     <ClInclude Include="..\src\framework\stdext\hash.h" />
     <ClInclude Include="..\src\framework\stdext\math.h" />
     <ClInclude Include="..\src\framework\stdext\net.h" />
@@ -660,6 +685,7 @@
     <ClInclude Include="..\src\framework\ui\uigridlayout.h" />
     <ClInclude Include="..\src\framework\ui\uihorizontallayout.h" />
     <ClInclude Include="..\src\framework\ui\uilayout.h" />
+    <ClInclude Include="..\src\framework\ui\uilayoutflexbox.h" />
     <ClInclude Include="..\src\framework\ui\uimanager.h" />
     <ClInclude Include="..\src\framework\ui\uiparticles.h" />
     <ClInclude Include="..\src\framework\ui\uiqrcode.h" />
@@ -669,12 +695,14 @@
     <ClInclude Include="..\src\framework\ui\uiwidget.h" />
     <ClInclude Include="..\src\framework\util\color.h" />
     <ClInclude Include="..\src\framework\util\crypt.h" />
+    <ClInclude Include="..\src\framework\util\stats.h" />
     <ClInclude Include="..\src\framework\util\matrix.h" />
     <ClInclude Include="..\src\framework\util\point.h" />
     <ClInclude Include="..\src\framework\util\rect.h" />
     <ClInclude Include="..\src\framework\util\size.h" />
     <ClInclude Include="..\src\framework\util\spinlock.h" />
     <ClInclude Include="..\src\gitinfo.h" />
+    <ClInclude Include="..\src\tools\datdump.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\otcicon.rc" />
@@ -692,12 +720,12 @@
     <Message Text="RunProtoCompile value: $(RunProtoCompile)" Importance="high" />
   </Target>
   <PropertyGroup Condition="'$(RunProtoCompile)'=='true'">
-    <ProtocPath>$(ProjectDir)vcpkg_installed\$(VcpkgTriplet)\tools\protobuf\protoc</ProtocPath>
+    <ProtocPath>$(VcpkgInstalledDir)\$(VcpkgTriplet)\tools\protobuf\protoc.exe</ProtocPath>
     <ProtoPath>$(SourcePath)protobuf</ProtoPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RunProtoCompile)'=='false'">
-    <ProtocPath>$(ProjectDir)vcpkg_installed\$(VcpkgTriplet)\tools\protobuf\protoc</ProtocPath>
-    <ProtoPath>$(GITHUB_WORKSPACE)\src\protobuf</ProtoPath>
+    <ProtocPath>$(VcpkgInstalledDir)\$(VcpkgTriplet)\tools\protobuf\protoc.exe</ProtocPath>
+    <ProtoPath>$(SourcePath)protobuf</ProtoPath>
   </PropertyGroup>
   <ItemGroup>
     <ProtoFiles Include="$(ProtoPath)\*.proto" />
@@ -716,7 +744,4 @@
     </ItemGroup>
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.targets" Condition="Exists('$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.targets')" />
-  </ImportGroup>
 </Project>

@@ -192,6 +192,7 @@ GameConcotions = 94
 GameAnthem = 95
 GameVipGroups = 96
 GameBosstiary = 97
+GameDoublePlayerGoodsMoney = 98
 GameLoadSprInsteadProtobuf = 100
 GameItemShader = 101
 GameCreatureShader = 102
@@ -216,10 +217,12 @@ GameAllowCustomBotScripts = 120
 GameColorizedLootValue = 121
 GameAllowPreWalk = 122
 GamePlayerFamiliars = 123
--- = 124
+GameTileAddThingWithStackpos = 124
 GameMapCache = 125
 GameForgeSkillStats = 126
 GameCharacterSkillStats = 127
+GameCreaturePaperdoll = 128
+GameVocationMonk = 130 -- GameMultiSpr is 129
 
 TextColors = {
     red = '#f55e5e',    -- '#c83200'
@@ -295,8 +298,9 @@ MessageModes = {
     OfflineTrainning = 54,
     Transaction = 55,
     Potion = 56,
+    ValuableLoot = 57,
 
-    Last = 57,
+    Last = 58,
     Invalid = 255
 }
 
@@ -471,4 +475,19 @@ ExperienceRate = {
     XP_BOOST = 3,
     STAMINA_MULTIPLIER = 4
 }
+
+PriceTypeEnum = {
+    Market = 0,
+    Leader = 1
+}
+
+-- Analyzer constants
+ANALYZER_HEAL = 0
+ANALYZER_DAMAGE_DEALT = 1
+ANALYZER_DAMAGE_RECEIVED = 2
+-- Party Analyser constants
+PARTYANALYZERACTION_RESET = 0
+PARTYANALYZERACTION_PRICETYPE = 1
+PARTYANALYZERACTION_PRICEVALUE = 2
+
 -- @}

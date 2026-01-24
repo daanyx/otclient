@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,18 +23,13 @@
 #ifdef WIN32
 
 #include "win32window.h"
-#include <framework/core/application.h>
 #include <framework/core/eventdispatcher.h>
-#include <framework/core/resourcemanager.h>
+#include <framework/util/stats.h>
 #include <framework/graphics/image.h>
-#include <framework/util/color.h>
-#include "framework/core/graphicalapplication.h"
 
-#ifdef NDEBUG
 #include <timeapi.h>
-#endif
 
-// Include for DWM API
+ // Include for DWM API
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
 
@@ -46,7 +41,7 @@ constexpr auto WINDOW_NAME = "BASED_ON_TIBIA_GAME_ENGINE";
 #ifndef DWMWA_CAPTION_COLOR
 #define DWMWA_CAPTION_COLOR 35
 #endif
-#ifndef DWMWA_TEXT_COLOR  
+#ifndef DWMWA_TEXT_COLOR
 #define DWMWA_TEXT_COLOR 36
 #endif
 
@@ -522,6 +517,7 @@ void WIN32Window::maximize()
 
 void WIN32Window::poll()
 {
+    AutoStat s(STATS_RENDER, "PollWindow");
     fireKeysPress();
     MSG msg;
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -1052,7 +1048,7 @@ void WIN32Window::setTitleBarColor(const Color& color)
         // Color uses RGBA format, Windows expects BGR
         const COLORREF dwmColor = RGB(
             static_cast<BYTE>(color.r() * 255),
-            static_cast<BYTE>(color.g() * 255), 
+            static_cast<BYTE>(color.g() * 255),
             static_cast<BYTE>(color.b() * 255)
         );
 
@@ -1069,7 +1065,7 @@ void WIN32Window::setTitleBarColor(const Color& color)
             // This is normal on older Windows versions
             g_logger.debug("Failed to set title bar color: HRESULT = 0x{:08X}", static_cast<uint32_t>(hr));
         } else {
-            g_logger.debug("Successfully set title bar color to RGB({}, {}, {})", 
+            g_logger.debug("Successfully set title bar color to RGB({}, {}, {})",
                 static_cast<int>(color.r() * 255),
                 static_cast<int>(color.g() * 255),
                 static_cast<int>(color.b() * 255)

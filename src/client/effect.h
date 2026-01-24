@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,17 +23,16 @@
 #pragma once
 
 #include "thing.h"
-#include <framework/core/timer.h>
 
  // @bindclass
 class Effect final : public Thing
 {
 public:
-    void draw(const Point& /*dest*/, bool drawThings = true, const LightViewPtr & = nullptr) override;
+    void draw(const Point& /*dest*/, bool drawThings = true, LightView* = nullptr) override;
     void setId(uint32_t id) override;
     void setPosition(const Position& position, uint8_t stackPos = 0) override;
 
-    bool isEffect() override { return true; }
+    bool isEffect() const override { return true; }
     bool waitFor(const EffectPtr&);
 
     EffectPtr asEffect() { return static_self_cast<Effect>(); }

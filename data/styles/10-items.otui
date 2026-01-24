@@ -42,6 +42,8 @@ MainInventoryItem < UIWidget
   image-border: 3
   phantom: false
   size: 34 34
+  $on:
+    image-source: /images/inventory/containerslot_goldenborder
 
   UIWidget
     id: backpack
@@ -231,4 +233,10 @@ MainInventoryItem < UIWidget
       focusable: false
       visible: false
       image-smooth: true
-      
+
+UIDragIcon < UIItem
+  size: 34 34
+  border-color: alpha
+  virtual: true
+  focusable: false
+  phantom: true

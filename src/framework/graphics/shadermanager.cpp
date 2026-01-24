@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,10 @@
 
 #include "shadermanager.h"
 
-#include <framework/core/eventdispatcher.h>
-#include <framework/core/resourcemanager.h>
-#include <framework/graphics/graphics.h>
-#include <framework/graphics/paintershaderprogram.h>
-#include <framework/graphics/shader/shadersources.h>
+#include "paintershaderprogram.h"
+#include "framework/core/eventdispatcher.h"
+#include "framework/core/resourcemanager.h"
+#include "shader/shadersources.h"
 
 ShaderManager g_shaders;
 
@@ -140,6 +139,16 @@ void ShaderManager::setupMapShader(const std::string_view name)
         shader->bindUniformLocation(MAP_GLOBAL_COORD, "u_MapGlobalCoord");
         shader->bindUniformLocation(MAP_WALKOFFSET, "u_WalkOffset");
         shader->bindUniformLocation(MAP_ZOOM, "u_MapZoom");
+    });
+}
+
+void ShaderManager::setupTextShader(const std::string_view name)
+{
+    g_mainDispatcher.addEvent([&, name = name.data()] {
+        const auto& shader = getShader(name);
+        if (!shader) return;
+        shader->bindUniformLocation(TEXT_OFFSET_UNIFORM, "u_Offset");
+        shader->bindUniformLocation(TEXT_CENTER_UNIFORM, "u_Center");
     });
 }
 

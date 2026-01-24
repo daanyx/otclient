@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,13 +24,6 @@
 
 #include <framework/global.h>
 #include <framework/stdext/uri.h>
-
-#include <queue>
-
-#include <asio.hpp>
-#include <asio/ssl.hpp>
-
-#include <zlib.h>
 
  //  result
 class HttpSession;
@@ -82,6 +75,14 @@ public:
     {
         assert(m_callback != nullptr);
         assert(m_result != nullptr);
+
+        // Configure SSL context properly
+        m_context.set_default_verify_paths();
+        m_context.set_verify_mode(asio::ssl::verify_none);
+        m_context.set_options(asio::ssl::context::default_workarounds |
+                              asio::ssl::context::no_sslv2 |
+                              asio::ssl::context::no_sslv3 |
+                              asio::ssl::context::single_dh_use);
     };
     void start();
     void cancel() const { onError("canceled"); }
@@ -103,7 +104,7 @@ private:
     asio::steady_timer m_timer;
     ParsedURI instance_uri;
 
-    asio::ssl::context m_context{ asio::ssl::context::tlsv12_client };
+    asio::ssl::context m_context{ asio::ssl::context::sslv23_client };
     asio::ssl::stream<asio::ip::tcp::socket> m_ssl{ m_service, m_context };
 
     std::string m_request;
@@ -170,7 +171,7 @@ private:
     bool m_handshake_complete{ false };
     ParsedURI instance_uri;
 
-    asio::ssl::context m_context{ asio::ssl::context::tlsv12_client };
+    asio::ssl::context m_context{ asio::ssl::context::sslv23_client };
     asio::ssl::stream<asio::ip::tcp::socket> m_ssl{ m_service, m_context };
 
     std::queue<std::string> m_sendQueue;
@@ -236,7 +237,7 @@ private:
     std::unordered_map<int, HttpResult_ptr> m_operations;
     std::unordered_map<int, std::shared_ptr<WebsocketSession>> m_websockets;
     std::unordered_map<std::string, HttpResult_ptr> m_downloads;
-    std::string m_userAgent = "Mozilla/5.0";
+    std::string m_userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     std::unordered_map<std::string, std::string> m_custom_header;
 };
 

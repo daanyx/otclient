@@ -24,12 +24,6 @@
  */
 
 #include "apngloader.h"
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <sstream>
-
-#include <zlib.h>
 
 #if defined(_MSC_VER) && _MSC_VER >= 1300
 #define swap16(data) _byteswap_ushort(data)
